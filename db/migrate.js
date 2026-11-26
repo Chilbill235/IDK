@@ -23,6 +23,7 @@ async function migrate() {
         display_name TEXT NOT NULL,
         email TEXT UNIQUE,
         password_hash TEXT NOT NULL,
+        role TEXT DEFAULT 'user',
         avatar TEXT DEFAULT '?',
         color TEXT DEFAULT '#4d9dff',
         name_color TEXT,
@@ -44,6 +45,9 @@ async function migrate() {
         updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT * 1000
       )
     `;
+
+    // ensure role column exists
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'`;
 
     // Bans table
     await sql`

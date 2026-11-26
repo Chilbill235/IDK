@@ -50,11 +50,21 @@ async function query(sql, params) {
 // ==================== USERS ====================
 async function createUser({ username, displayName, email, password, avatar, color }) {
   const passwordHash = hashPassword(password);
+  let role = 'user';
+  if (isDbAvailable()) {
+    try {
+      const rows = await getSql()`SELECT COUNT(*)::int AS c FROM users`;
+      if (!rows[0] || rows[0].c === 0) role = 'moderator';
+    } catch (e) {}
+  } else {
+    if (memoryStore.users.size === 0) role = 'moderator';
+  }
   const user = {
     username: username.toLowerCase(),
     display_name: displayName || username,
     email: email?.toLowerCase(),
     password_hash: passwordHash,
+    role,
     avatar: avatar || username.slice(0, 2).toUpperCase(),
     color: color || '#4d9dff',
     created_at: now(),
@@ -64,12 +74,13 @@ async function createUser({ username, displayName, email, password, avatar, colo
   if (isDbAvailable()) {
     try {
       await getSql()`
-        INSERT INTO users (username, display_name, email, password_hash, avatar, color, created_at, updated_at)
-        VALUES (${user.username}, ${user.display_name}, ${user.email}, ${user.password_hash}, ${user.avatar}, ${user.color}, ${user.created_at}, ${user.updated_at})
+        INSERT INTO users (username, display_name, email, password_hash, role, avatar, color, created_at, updated_at)
+        VALUES (${user.username}, ${user.display_name}, ${user.email}, ${user.password_hash}, ${user.role}, ${user.avatar}, ${user.color}, ${user.created_at}, ${user.updated_at})
         ON CONFLICT (username) DO UPDATE SET
           display_name = EXCLUDED.display_name,
           email = EXCLUDED.email,
           password_hash = EXCLUDED.password_hash,
+          role = COALESCE(users.role, EXCLUDED.role),
           avatar = EXCLUDED.avatar,
           color = EXCLUDED.color,
           updated_at = EXCLUDED.updated_at
