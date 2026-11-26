@@ -10,12 +10,12 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
-// On Vercel, server.js is at /var/task/server.js (project root)
-// api/index.js requires '../server.js' from /var/task/api, so __dirname in server.js is /var/task
-// Static files (index.html, styles.css, etc.) are at /var/task/public
+// On Vercel: server.js runs from /var/task/api (required by api/index.js)
+// Static files bundled via includeFiles are at /var/task/public
+// Locally: server.js at project root, static files at ./public
 const IS_VERCEL = !!process.env.VERCEL;
-const APP_ROOT = path.resolve(__dirname); // server.js is at project root
-const PUBLIC_ROOT = path.join(APP_ROOT, 'public'); // static files in public/
+const PROJECT_ROOT = IS_VERCEL ? path.resolve(__dirname, '..') : path.resolve(__dirname);
+const PUBLIC_ROOT = path.join(PROJECT_ROOT, 'public');
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || 'localhost';
 const NODE_ENV = process.env.NODE_ENV || 'production';
