@@ -154,25 +154,6 @@ app.get('/__sb__/info', (req, res) => {
   });
 });
 
-// Debug endpoint to check static files
-app.get('/__sb__/debug/files', (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-  const publicRoot = path.join(__dirname, 'public');
-  const files = {};
-  try {
-    const entries = fs.readdirSync(publicRoot, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(publicRoot, entry.name);
-      const stat = fs.statSync(fullPath);
-      files[entry.name] = { isFile: entry.isFile(), size: stat.size };
-    }
-  } catch (e) {
-    files.error = e.message;
-  }
-  res.json({ publicRoot, files, __dirname, cwd: process.cwd() });
-});
-
 // ---------------------------------------------------------------------------
 // Push notification API
 // ---------------------------------------------------------------------------
