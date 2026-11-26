@@ -132,23 +132,46 @@ async function verifyUser(username, password) {
 async function updateUser(username, updates) {
   const key = username.toLowerCase();
   const allowed = ['display_name', 'email', 'avatar', 'color', 'name_color', 'avatar_shape', 'font_style', 'banner_pattern', 'profile_effect', 'presence', 'status_text', 'status_expires', 'status_expires_at', 'bio', 'pronouns', 'bio_visibility', 'show_online', 'show_last_seen', 'allow_mod_dms'];
-  const setClause = [];
-  const values = [];
 
-  for (const [key, value] of Object.entries(updates)) {
-    if (allowed.includes(key)) {
-      setClause.push(`${key} = $${values.length + 1}`);
-      values.push(value);
+  const existing = await getUser(key);
+  if (!existing) return null;
+
+  const merged = { ...existing };
+  let changed = false;
+  for (const [k, v] of Object.entries(updates)) {
+    if (allowed.includes(k) && merged[k] !== v) {
+      merged[k] = v;
+      changed = true;
     }
   }
-  if (!setClause.length) return await getUser(key);
-
-  values.push(key);
-  values.push(now());
+  if (!changed) return existing;
+  merged.updated_at = now();
 
   if (isDbAvailable()) {
     try {
-      await getSql()`UPDATE users SET ${getSql(setClause.join(', '))}, updated_at = ${now()} WHERE username = ${key}`;
+      await getSql()`INSERT INTO users (username, display_name, email, password_hash, role, avatar, color, name_color, avatar_shape, font_style, banner_pattern, profile_effect, presence, status_text, status_expires, status_expires_at, bio, pronouns, bio_visibility, show_online, show_last_seen, allow_mod_dms, created_at, updated_at)
+        VALUES (${merged.username}, ${merged.display_name}, ${merged.email}, ${merged.password_hash}, ${merged.role}, ${merged.avatar}, ${merged.color}, ${merged.name_color}, ${merged.avatar_shape}, ${merged.font_style}, ${merged.banner_pattern}, ${merged.profile_effect}, ${merged.presence}, ${merged.status_text}, ${merged.status_expires}, ${merged.status_expires_at}, ${merged.bio}, ${merged.pronouns}, ${merged.bio_visibility}, ${merged.show_online}, ${merged.show_last_seen}, ${merged.allow_mod_dms}, ${merged.created_at}, ${merged.updated_at})
+        ON CONFLICT (username) DO UPDATE SET
+          display_name = EXCLUDED.display_name,
+          email = EXCLUDED.email,
+          avatar = EXCLUDED.avatar,
+          color = EXCLUDED.color,
+          name_color = EXCLUDED.name_color,
+          avatar_shape = EXCLUDED.avatar_shape,
+          font_style = EXCLUDED.font_style,
+          banner_pattern = EXCLUDED.banner_pattern,
+          profile_effect = EXCLUDED.profile_effect,
+          presence = EXCLUDED.presence,
+          status_text = EXCLUDED.status_text,
+          status_expires = EXCLUDED.status_expires,
+          status_expires_at = EXCLUDED.status_expires_at,
+          bio = EXCLUDED.bio,
+          pronouns = EXCLUDED.pronouns,
+          bio_visibility = EXCLUDED.bio_visibility,
+          show_online = EXCLUDED.show_online,
+          show_last_seen = EXCLUDED.show_last_seen,
+          allow_mod_dms = EXCLUDED.allow_mod_dms,
+          updated_at = EXCLUDED.updated_at`;
     } catch (e) {
       console.error('[db] updateUser failed:', e.message);
     }
@@ -219,7 +242,7 @@ async function getActiveBan(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM bans WHERE username = ${key} AND is_active = true AND (is_permanent = true OR expires_at > ${now()}) ORDER BY created_at DESC LIMIT 1`;
+      const rows = await getSql()`SELECT * FROM bans WHERE username = ${key} AND is_active = true AND (is_permanent = true OR expires_at > ${now()}) ORDER BY created_at DESC LIMIT 1`;
       return rows[0] || null;
     } catch (e) {
       console.error('[db] getActiveBan failed:', e.message);
@@ -233,7 +256,7 @@ async function getActiveBan(username) {
 async function getAllBans() {
   if (isDbAvailable()) {
     try {
-      return await getSql`SELECT * FROM bans WHERE is_active = true ORDER BY created_at DESC`;
+      return await getSql()`SELECT * FROM bans WHERE is_active = true ORDER BY created_at DESC`;
     } catch (e) {
       console.error('[db] getAllBans failed:', e.message);
     }
@@ -288,7 +311,7 @@ async function unbanIP(ip) {
 async function checkIPBan(ip, fingerprint) {
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM ip_bans WHERE (ip = ${ip} OR fingerprint = ${fingerprint}) AND is_active = true AND (is_permanent = true OR expires_at > ${now()}) ORDER BY created_at DESC LIMIT 1`;
+      const rows = await getSql()`SELECT * FROM ip_bans WHERE (ip = ${ip} OR fingerprint = ${fingerprint}) AND is_active = true AND (is_permanent = true OR expires_at > ${now()}) ORDER BY created_at DESC LIMIT 1`;
       return rows[0] || null;
     } catch (e) {
       console.error('[db] checkIPBan failed:', e.message);
@@ -302,7 +325,7 @@ async function checkIPBan(ip, fingerprint) {
 async function getAllIPBans() {
   if (isDbAvailable()) {
     try {
-      return await getSql`SELECT * FROM ip_bans WHERE is_active = true ORDER BY created_at DESC`;
+      return await getSql()`SELECT * FROM ip_bans WHERE is_active = true ORDER BY created_at DESC`;
     } catch (e) {
       console.error('[db] getAllIPBans failed:', e.message);
     }
@@ -357,9 +380,9 @@ async function getPushSubscriptions(username = null) {
   if (isDbAvailable()) {
     try {
       if (username) {
-        return await getSql`SELECT * FROM push_subscriptions WHERE username = ${username.toLowerCase()}`;
+        return await getSql()`SELECT * FROM push_subscriptions WHERE username = ${username.toLowerCase()}`;
       }
-      return await getSql`SELECT * FROM push_subscriptions`;
+      return await getSql()`SELECT * FROM push_subscriptions`;
     } catch (e) {
       console.error('[db] getPushSubscriptions failed:', e.message);
     }
@@ -411,7 +434,7 @@ async function getWarnings(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      return await getSql`SELECT * FROM warnings WHERE username = ${key} AND (expires_at IS NULL OR expires_at > ${now()}) ORDER BY created_at DESC`;
+      return await getSql()`SELECT * FROM warnings WHERE username = ${key} AND (expires_at IS NULL OR expires_at > ${now()}) ORDER BY created_at DESC`;
     } catch (e) {
       console.error('[db] getWarnings failed:', e.message);
     }
@@ -475,7 +498,7 @@ async function isFrozen(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM frozen_users WHERE username = ${key}`;
+      const rows = await getSql()`SELECT * FROM frozen_users WHERE username = ${key}`;
       return !!rows[0];
     } catch (e) {
       console.error('[db] isFrozen failed:', e.message);
@@ -488,7 +511,7 @@ async function getFrozenUser(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM frozen_users WHERE username = ${key}`;
+      const rows = await getSql()`SELECT * FROM frozen_users WHERE username = ${key}`;
       return rows[0] || null;
     } catch (e) {
       console.error('[db] getFrozenUser failed:', e.message);
@@ -501,7 +524,7 @@ async function getFrozenUser(username) {
 async function getMaintenanceState() {
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM maintenance_state WHERE id = 1`;
+      const rows = await getSql()`SELECT * FROM maintenance_state WHERE id = 1`;
       if (rows[0]) {
         return {
           enabled: rows[0].enabled,
@@ -579,7 +602,7 @@ async function getSlowMode(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM slow_mode WHERE username = ${key}`;
+      const rows = await getSql()`SELECT * FROM slow_mode WHERE username = ${key}`;
       return rows[0] || null;
     } catch (e) {
       console.error('[db] getSlowMode failed:', e.message);
@@ -604,7 +627,7 @@ async function clearSlowMode(username) {
 async function getAllFrozenUsers() {
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM frozen_users`;
+      const rows = await getSql()`SELECT * FROM frozen_users`;
       return rows;
     } catch (e) {
       console.error('[db] getAllFrozenUsers failed:', e.message);
@@ -616,7 +639,7 @@ async function getAllFrozenUsers() {
 async function getAllSlowMode() {
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM slow_mode`;
+      const rows = await getSql()`SELECT * FROM slow_mode`;
       return rows;
     } catch (e) {
       console.error('[db] getAllSlowMode failed:', e.message);
@@ -629,7 +652,7 @@ async function getAllMutes() {
   // Mutes are stored as warnings with [MUTE] prefix in the warnings table
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT * FROM warnings WHERE reason LIKE '[MUTE]%'`;
+      const rows = await getSql()`SELECT * FROM warnings WHERE reason LIKE '[MUTE]%'`;
       return rows;
     } catch (e) {
       console.error('[db] getAllMutes failed:', e.message);
@@ -690,7 +713,7 @@ async function getChatMessages(user1, user2, limit = 100) {
   const u2 = user2.toLowerCase();
   if (isDbAvailable()) {
     try {
-      return await getSql`
+      return await getSql()`
         SELECT * FROM chat_messages
         WHERE (from_username = ${u1} AND to_username = ${u2})
            OR (from_username = ${u2} AND to_username = ${u1})
@@ -710,17 +733,21 @@ async function getChatMessages(user1, user2, limit = 100) {
 async function updateChatMessage(messageId, updates) {
   if (isDbAvailable()) {
     try {
-      const setClause = [];
-      const values = [];
-      for (const [key, value] of Object.entries(updates)) {
-        if (['text', 'data', 'delivered_at', 'read_at', 'edited_at', 'deleted'].includes(key)) {
-          setClause.push(`${key} = $${values.length + 1}`);
-          values.push(key === 'data' ? JSON.stringify(value) : value);
+      for (const [k, v] of Object.entries(updates)) {
+        if (k === 'text') {
+          await getSql()`UPDATE chat_messages SET text = ${v} WHERE message_id = ${messageId}`;
+        } else if (k === 'data') {
+          await getSql()`UPDATE chat_messages SET data = ${JSON.stringify(v)} WHERE message_id = ${messageId}`;
+        } else if (k === 'delivered_at') {
+          await getSql()`UPDATE chat_messages SET delivered_at = ${v} WHERE message_id = ${messageId}`;
+        } else if (k === 'read_at') {
+          await getSql()`UPDATE chat_messages SET read_at = ${v} WHERE message_id = ${messageId}`;
+        } else if (k === 'edited_at') {
+          await getSql()`UPDATE chat_messages SET edited_at = ${v} WHERE message_id = ${messageId}`;
+        } else if (k === 'deleted') {
+          await getSql()`UPDATE chat_messages SET deleted = ${v} WHERE message_id = ${messageId}`;
         }
       }
-      if (!setClause.length) return;
-      values.push(messageId);
-      await getSql()`UPDATE chat_messages SET ${getSql(setClause.join(', '))} WHERE message_id = ${messageId}`;
     } catch (e) {
       console.error('[db] updateChatMessage failed:', e.message);
     }
@@ -775,7 +802,7 @@ async function isBlocked(blocker, blocked) {
 
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT 1 FROM blocks WHERE blocker = ${b1} AND blocked = ${b2}`;
+      const rows = await getSql()`SELECT 1 FROM blocks WHERE blocker = ${b1} AND blocked = ${b2}`;
       return rows.length > 0;
     } catch (e) {
       console.error('[db] isBlocked failed:', e.message);
@@ -825,7 +852,7 @@ async function getPinnedMessages(user1, user2) {
 
   if (isDbAvailable()) {
     try {
-      return await getSql`SELECT * FROM pinned_messages WHERE (user1 = ${u1} AND user2 = ${u2}) OR (user1 = ${u2} AND user2 = ${u1}) ORDER BY pinned_at DESC`;
+      return await getSql()`SELECT * FROM pinned_messages WHERE (user1 = ${u1} AND user2 = ${u2}) OR (user1 = ${u2} AND user2 = ${u1}) ORDER BY pinned_at DESC`;
     } catch (e) {
       console.error('[db] getPinnedMessages failed:', e.message);
     }
@@ -839,7 +866,7 @@ async function unpinMessage(user1, user2, messageId) {
 
   if (isDbAvailable()) {
     try {
-      await getSql`DELETE FROM pinned_messages WHERE ((user1 = ${u1} AND user2 = ${u2}) OR (user1 = ${u2} AND user2 = ${u1})) AND message_id = ${messageId}`;
+      await getSql()`DELETE FROM pinned_messages WHERE ((user1 = ${u1} AND user2 = ${u2}) OR (user1 = ${u2} AND user2 = ${u1})) AND message_id = ${messageId}`;
     } catch (e) {
       console.error('[db] unpinMessage failed:', e.message);
     }
@@ -854,7 +881,7 @@ async function getUserSettings(username) {
   const key = username.toLowerCase();
   if (isDbAvailable()) {
     try {
-      const rows = await getSql`SELECT settings FROM user_settings WHERE username = ${key}`;
+      const rows = await getSql()`SELECT settings FROM user_settings WHERE username = ${key}`;
       return rows[0]?.settings || {};
     } catch (e) {
       console.error('[db] getUserSettings failed:', e.message);
@@ -913,9 +940,9 @@ async function getReports(status = null) {
   if (isDbAvailable()) {
     try {
       if (status) {
-        return await getSql`SELECT * FROM reports WHERE status = ${status} ORDER BY created_at DESC`;
+        return await getSql()`SELECT * FROM reports WHERE status = ${status} ORDER BY created_at DESC`;
       }
-      return await getSql`SELECT * FROM reports ORDER BY created_at DESC`;
+      return await getSql()`SELECT * FROM reports ORDER BY created_at DESC`;
     } catch (e) {
       console.error('[db] getReports failed:', e.message);
     }
@@ -928,17 +955,15 @@ async function getReports(status = null) {
 async function updateReport(reportId, updates) {
   if (isDbAvailable()) {
     try {
-      const setClause = [];
-      const values = [];
-      for (const [key, value] of Object.entries(updates)) {
-        if (['status', 'handled_by', 'handled_at'].includes(key)) {
-          setClause.push(`${key} = $${values.length + 1}`);
-          values.push(value);
+      for (const [k, v] of Object.entries(updates)) {
+        if (k === 'status') {
+          await getSql()`UPDATE reports SET status = ${v} WHERE id = ${reportId}`;
+        } else if (k === 'handled_by') {
+          await getSql()`UPDATE reports SET handled_by = ${v} WHERE id = ${reportId}`;
+        } else if (k === 'handled_at') {
+          await getSql()`UPDATE reports SET handled_at = ${v} WHERE id = ${reportId}`;
         }
       }
-      if (!setClause.length) return;
-      values.push(reportId);
-      await getSql()`UPDATE reports SET ${getSql(setClause.join(', '))} WHERE id = ${reportId}`;
     } catch (e) {
       console.error('[db] updateReport failed:', e.message);
     }
@@ -946,6 +971,34 @@ async function updateReport(reportId, updates) {
     const report = memoryStore.reports.find(r => r.id === reportId);
     if (report) Object.assign(report, updates);
   }
+}
+
+// ==================== RESET (dev only) ====================
+async function reset() {
+  if (isDbAvailable()) {
+    const sql = getSql();
+    try {
+      await sql`TRUNCATE TABLE users, bans, ip_bans, push_subscriptions, warnings, frozen_users, maintenance_state, slow_mode, chat_messages, blocks, pinned_messages, user_settings, reports RESTART IDENTITY CASCADE`;
+      await sql`INSERT INTO maintenance_state (id) VALUES (1) ON CONFLICT (id) DO NOTHING`;
+    } catch (e) {
+      console.error('[db] reset failed:', e.message);
+      throw e;
+    }
+  }
+  memoryStore.users.clear();
+  memoryStore.bans.clear();
+  memoryStore.ipBans.clear();
+  memoryStore.pushSubs.clear();
+  memoryStore.warnings.clear();
+  memoryStore.frozenUsers.clear();
+  memoryStore.maintenance = { enabled: false, message: '', enabledBy: '', enabledAt: 0, until: 0 };
+  memoryStore.slowMode.clear();
+  memoryStore.chatMessages = [];
+  memoryStore.blocks.clear();
+  memoryStore.pinnedMessages = [];
+  memoryStore.userSettings.clear();
+  memoryStore.reports = [];
+  return { ok: true };
 }
 
 // ==================== HELPERS ====================
@@ -1028,5 +1081,6 @@ module.exports = {
   hashPassword,
   verifyPassword,
   isDbAvailable,
-  now
+  now,
+  reset
 };

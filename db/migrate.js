@@ -110,7 +110,7 @@ async function migrate() {
       )
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_warnings_username ON warnings(username)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_warnings_active ON warnings(expires_at) WHERE expires_at > EXTRACT(EPOCH FROM NOW())::BIGINT * 1000`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_warnings_expires ON warnings(expires_at)`;
 
     // Frozen users table
     await sql`

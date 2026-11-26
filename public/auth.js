@@ -38,7 +38,7 @@ window.Auth = (function () {
   async function syncUsersFromServer() {
     const r = await apiRequest('GET', '/auth/users');
     if (!r.error && r.users) {
-      const users = {};
+      const users = getUsers();
       for (const u of r.users) users[u.username] = u;
       saveUsers(users);
     }
@@ -47,7 +47,7 @@ window.Auth = (function () {
   async function syncBansFromServer() {
     const r = await apiRequest('GET', '/auth/bans');
     if (!r.error && r.bans) {
-      const bans = { users: {}, ips: {}, history: [] };
+      const bans = getBans();
       for (const b of r.bans) {
         if (b.username && !b.username.startsWith('FP:') && !b.username.startsWith('ip:')) {
           bans.users[b.username] = { ...b, bannedAt: b.bannedAt || Date.now(), expiresAt: b.expiresAt ?? null };
@@ -60,7 +60,7 @@ window.Auth = (function () {
   async function syncMutesFromServer() {
     const r = await apiRequest('GET', '/auth/mutes');
     if (!r.error && r.mutes) {
-      const mutes = {};
+      const mutes = getMutes();
       for (const [username, entry] of Object.entries(r.mutes)) {
         mutes[username] = { ...entry, mutedAt: entry.mutedAt || Date.now(), until: entry.until ?? null };
       }
@@ -71,7 +71,7 @@ window.Auth = (function () {
   async function syncFrozenFromServer() {
     const r = await apiRequest('GET', '/auth/frozen/all');
     if (!r.error && r.frozen) {
-      const frozen = {};
+      const frozen = getFrozen();
       for (const [username, entry] of Object.entries(r.frozen)) {
         frozen[username] = { ...entry, at: entry.created_at || entry.at || Date.now() };
       }
@@ -82,7 +82,7 @@ window.Auth = (function () {
   async function syncSlowModeFromServer() {
     const r = await apiRequest('GET', '/auth/slowmode/all');
     if (!r.error && r.slowmode) {
-      const slow = {};
+      const slow = getSlowMode();
       for (const [username, entry] of Object.entries(r.slowmode)) {
         slow[username] = { ...entry, since: entry.created_at || entry.since || Date.now() };
       }
@@ -94,7 +94,7 @@ window.Auth = (function () {
     if (!username) return Promise.resolve();
     const r = await apiRequest('GET', '/auth/warnings/' + (username || (window.ME ? window.ME.username : '')));
     if (!r.error && r.warnings) {
-      const all = {};
+      const all = getWarnings();
       all[username || window.ME?.username] = r.warnings.map(w => ({ reason: w.reason, at: w.created_at || Date.now(), by: w.warned_by || 'system', automated: w.automated }));
       saveWarnings(all);
     }
@@ -830,6 +830,16 @@ window.Auth = (function () {
     }, HEARTBEAT_MS);
   }
 
+  function resetAllLocalData() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb26_')) keys.push(key);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  }
+
   function rememberedUsername() { try { return localStorage.getItem(REMEMBER_KEY); } catch (e) { return null; } }
   function whoElseHasAccount(username) {
     const lock = getLock(username);
@@ -1036,7 +1046,7 @@ window.Auth = (function () {
   }
 
   return {
-    initAuthPage, login, forceLogin, logout, current, listOthers, createUser,
+    initAuthPage, login, forceLogin, logout, resetAllLocalData, current, listOthers, createUser,
     getUsers, saveUsers, rememberedUsername, whoElseHasAccount, initLockChannel,
     startHeartbeat, releaseLock: logout,
     forceReleaseLock: (u) => { clearLock(u); broadcast('takeover', u, getTabId()); },
