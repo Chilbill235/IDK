@@ -1600,4 +1600,25 @@ body.sb-hide-timestamps .imsg-msg-meta { display: none; }
 /* FIX 15: Empty state compaction on mobile */
 @media (max-width: 768px) {
   .mod-empty-large { padding: 40px 16px; }
+}/* === MOBILE ACCESSIBILITY PATCH === */
+@media (max-width: 768px) {
+  html { -webkit-text-size-adjust: 100%; }
+  input, textarea, select, button { font-size: 16px !important; }
+  a, button, [role="button"] { min-height: 44px; min-width: 44px; }
+  img, video, iframe, table { max-width: 100%; }
+  body { overflow-x: hidden; }
+  * { word-wrap: break-word; }
+}
+:focus-visible { outline: 2px solid var(--accent, #4d9dff); outline-offset: 2px; }
+/* === GLOBAL UI POLISH === */
+:root { --radius-xl: 18px; --shadow-card: 0 12px 40px rgba(0,0,0,.35); }
+.card, .panel, .auth-card { border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+.btn, .auth-submit { border-radius: 12px; font-weight: 700; letter-spacing: -.2px; }
+h1,h2,h3 { letter-spacing: -.3px; }
+img { border-radius: 8px; }
+@media (max-width: 768px) {
+  .topbar { padding: 10px 12px !important; }
+  .mobile-nav { height: 64px; }
+  .mnav-btn { font-size: 11px; }
+  .mnav-btn .ico { font-size: 20px; }
 }
