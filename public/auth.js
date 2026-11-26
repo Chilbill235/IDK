@@ -575,16 +575,6 @@ window.Auth = (function () {
     }
     tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
-    document.querySelectorAll('.auth-pass-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const inp = document.getElementById(btn.dataset.target);
-        if (!inp) return;
-        const show = inp.type === 'password';
-        inp.type = show ? 'text' : 'password';
-        btn.textContent = show ? '🙈' : '👁';
-      });
-    });
-
     function setBtnLoading(btn, loading) { if (!btn) return; btn.disabled = loading; btn.classList.toggle('loading', loading); }
     function flashError(id, message) {
       const el = document.getElementById(id);
