@@ -387,7 +387,48 @@
     border-radius: 4px;
   }
 
-  /* ===== Page footer ===== */
+  /* ---- Error shake feedback (auth.js toggles .shake) ---- */
+  .auth-card.shake { animation: sbAuthShake 0.45s var(--ease); }
+  @keyframes sbAuthShake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-7px); }
+    40%, 60% { transform: translateX(7px); }
+  }
+
+  /* ---- Submit loading spinner (auth.js toggles .loading) ---- */
+  .auth-submit.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+  }
+  .auth-submit.loading > * { opacity: 0; }
+  .auth-submit.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    animation: sbAuthBtnSpin 0.7s linear infinite;
+  }
+  @keyframes sbAuthBtnSpin { to { transform: rotate(360deg); } }
+
+  /* ---- Submit success state (auth.js toggles .success) ---- */
+  .auth-submit.success {
+    background: linear-gradient(180deg, var(--green-2), var(--green)) !important;
+    border-color: var(--green) !important;
+    box-shadow: 0 6px 20px rgba(52, 217, 127, 0.45) !important;
+    transform: none !important;
+  }
+
+  /* ============================================================
+     PAGE FOOTER
+     ============================================================ */
   .auth-page-footer {
     margin-top: auto;
     padding: 16px 20px;
@@ -416,6 +457,39 @@
   }
   .auth-page-footer-meta {
     margin-top: 4px;
+  }
+
+  /* ---- Responsive clock + topbar so nothing clips on phones ---- */
+  @media (max-width: 640px) {
+    .auth-topbar-left .sb-clock .sb-clock-greet,
+    .auth-topbar-left .sb-clock .sb-clock-sep { display: none; }
+    .auth-topbar-left .sb-clock {
+      padding: 4px 10px;
+      font-size: 10px;
+      gap: 6px;
+    }
+    .auth-topbar-left { gap: 10px; min-width: 0; }
+    .auth-topbar { gap: 10px; }
+  }
+  @media (max-width: 540px) {
+    .auth-topbar {
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+    .auth-topbar-left { flex: 1 1 auto; }
+    .auth-topnav {
+      flex: 1 1 100%;
+      justify-content: flex-start;
+    }
+  }
+  @media (max-width: 400px) {
+    .auth-topbar-left .sb-clock .sb-clock-text:nth-child(4) { display: none; }
+    .auth-topbar-left .sb-clock {
+      padding: 3px 9px;
+      font-size: 9.5px;
+      gap: 5px;
+    }
+    .auth-brand-name span { display: none; }
   }
 
   @media (max-width: 480px) {
