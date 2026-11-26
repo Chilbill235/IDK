@@ -17,6 +17,54 @@ window.Auth = (function () {
   const HEARTBEAT_MS = 3000;
   const STALE_MS = 8000;
   const ROLES = { OWNER: 'owner', MOD: 'mod', USER: 'user' };
+  const API_BASE = '/__sb__';
+
+  /* ---------- SQL API sync layer (with localStorage fallback) ---------- */
+  async function apiRequest(method, path, body) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: 'same-origin',
+      });
+      if (!res.ok) return { error: res.statusText, status: res.status };
+      return await res.json();
+    } catch (e) {
+      return { error: e.message };
+    }
+  }
+
+  async function syncUsersFromServer() {
+    const r = await apiRequest('GET', '/auth/users');
+    if (!r.error && r.users) {
+      const users = {};
+      for (const u of r.users) users[u.username] = u;
+      saveUsers(users);
+    }
+  }
+
+  async function syncBansFromServer() {
+    const r = await apiRequest('GET', '/auth/bans');
+    if (!r.error && r.bans) {
+      const bans = { users: {}, ips: {}, history: [] };
+      for (const b of r.bans) {
+        if (b.username && !b.username.startsWith('FP:') && !b.username.startsWith('ip:')) {
+          bans.users[b.username] = { ...b, bannedAt: b.bannedAt || Date.now(), expiresAt: b.expiresAt ?? null };
+        }
+      }
+      saveBans(bans);
+    }
+  }
+
+  async function syncWarningsFromServer() {
+    const r = await apiRequest('GET', '/auth/warnings/' + (window.ME ? window.ME.username : ''));
+    if (!r.error && r.warnings) {
+      const all = {};
+      all[window.ME.username] = r.warnings.map(w => ({ reason: w.reason, at: w.created_at || Date.now(), by: w.warned_by || 'system', automated: w.automated }));
+      saveWarnings(all);
+    }
+  }
 
   function hash(str) {
     let h = 0x811c9dc5;
@@ -139,6 +187,9 @@ window.Auth = (function () {
 
   function banUser(username, reason, durationKeyOrMs, opts = {}) {
     if (isPrivileged(username)) return null;
+    // Never ban yourself.
+    const me = current()?.username;
+    if (username.toLowerCase() === (me || '').toLowerCase()) return null;
     const bans = getBans();
     const durationMs = typeof durationKeyOrMs === 'number' ? durationKeyOrMs : (BAN_DURATIONS[durationKeyOrMs] !== undefined ? BAN_DURATIONS[durationKeyOrMs] : BAN_DURATIONS['1d']);
     const expiresAt = durationMs == null ? null : Date.now() + durationMs;
@@ -154,6 +205,8 @@ window.Auth = (function () {
     bans.history.push({ action: 'ban', username, reason: entry.reason, bannedBy: entry.bannedBy, at: entry.bannedAt, expiresAt, automated: entry.automated });
     if (bans.history.length > 500) bans.history = bans.history.slice(-500);
     saveBans(bans);
+    // Sync to SQL server (fire and forget)
+    apiRequest('POST', '/auth/ban', { username, reason: entry.reason, durationKey: entry.durationKey, durationMs, bannedBy: entry.bannedBy }).catch(() => {});
     if (sessionStorage.getItem(SESSION_KEY) === username) sessionStorage.removeItem(SESSION_KEY);
     try { window.RT?.banChanged(username, entry); } catch (e) {}
     try {
@@ -171,6 +224,7 @@ window.Auth = (function () {
     bans.history.push({ action: 'unban', username, by: current()?.username || 'system', at: Date.now() });
     if (bans.history.length > 500) bans.history = bans.history.slice(-500);
     saveBans(bans);
+    apiRequest('POST', '/auth/unban', { username }).catch(() => {});
     try { window.RT?.banCleared(username); } catch (e) {}
     try {
       const bc = new BroadcastChannel('sb26_bans_v64');
@@ -212,12 +266,15 @@ window.Auth = (function () {
 
   function muteUser(username, reason, durationKeyOrMs) {
     if (isPrivileged(username)) return null;
+    const me = current()?.username;
+    if (username.toLowerCase() === (me || '').toLowerCase()) return null;
     const mutes = getMutes();
     const durationMs = typeof durationKeyOrMs === 'number' ? durationKeyOrMs : (MUTE_DURATIONS[durationKeyOrMs] !== undefined ? MUTE_DURATIONS[durationKeyOrMs] : MUTE_DURATIONS['15m']);
     const until = durationMs == null ? null : Date.now() + durationMs;
     const entry = { reason: reason || 'Muted by moderator', mutedAt: Date.now(), mutedBy: current()?.username || 'system', until, permanent: until == null };
     mutes[username] = entry;
     saveMutes(mutes);
+    apiRequest('POST', '/auth/mute', { username, reason: entry.reason, durationMs, mutedBy: entry.mutedBy }).catch(() => {});
     try { window.RT?.mute(username, until, entry.reason); } catch (e) {}
     return entry;
   }
@@ -226,6 +283,7 @@ window.Auth = (function () {
     const mutes = getMutes();
     delete mutes[username];
     saveMutes(mutes);
+    apiRequest('POST', '/auth/unmute', { username }).catch(() => {});
     try { window.RT?.unmute(username); } catch (e) {}
     return true;
   }
@@ -279,6 +337,8 @@ window.Auth = (function () {
   function warnUser(username, reason, opts = {}) {
     if (isPrivileged(username)) return { count: 0, recent: [], ban: null, ignored: true };
     if (isWhitelisted(username)) return { count: 0, recent: [], ban: null, ignored: true };
+    const me = current()?.username;
+    if (username.toLowerCase() === (me || '').toLowerCase()) return { count: 0, recent: [], ban: null, ignored: true };
     const all = getWarnings();
     all[username] = all[username] || [];
     all[username].push({ reason: reason || 'Warning', at: Date.now(), by: current()?.username || 'system', automated: !!opts.automated });
@@ -287,6 +347,7 @@ window.Auth = (function () {
     const recent = getRecentWarnings(username);
     const count = recent.length;
     try { window.RT?.warn(username, { count, reason, automated: !!opts.automated }); } catch (e) {}
+    apiRequest('POST', '/auth/warn', { username, reason, warnedBy: current()?.username || 'system', automated: !!opts.automated }).catch(() => {});
     let banResult = null;
     if (count >= WARN_THRESHOLDS.warnBanMax) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, 'perm', { automated: true, appealable: true });
     else if (count >= WARN_THRESHOLDS.warnBanHard) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, '7d', { automated: true, appealable: true });
@@ -300,6 +361,7 @@ window.Auth = (function () {
     const all = getWarnings();
     delete all[username];
     saveWarnings(all);
+    apiRequest('POST', `/auth/warnings/${encodeURIComponent(username)}/clear`).catch(() => {});
     try { window.RT?.warn(username, { count: 0, cleared: true }); } catch (e) {}
   }
 
@@ -379,9 +441,25 @@ window.Auth = (function () {
     try { return await window.IPBan.checkSelf(); } catch (e) { return null; }
   }
 
-  function createUser({ username, email, password }) {
+  async function createUser({ username, email, password }) {
     username = username.trim().toLowerCase();
     email = email.trim().toLowerCase();
+    // Server-side check first
+    const reg = await apiRequest('POST', '/auth/register', { username, email, password });
+    if (reg.ok && reg.user) {
+      // Sync localStorage cache from server response
+      const users = getUsers();
+      users[reg.user.username] = {
+        username: reg.user.username, display: reg.user.display, email: reg.user.email, salt: '',
+        hash: '', createdAt: reg.user.createdAt, avatar: reg.user.avatar, color: reg.user.color,
+        role: reg.user.role || ROLES.USER, banned: false,
+      };
+      saveUsers(users);
+      try { window.IPBan && IPBan.registerSelf && IPBan.registerSelf(reg.user.username); } catch (e) {}
+      return { user: reg.user };
+    }
+    if (reg.status === 409) return { error: 'Username already exists.' };
+    // Fallback to localStorage-only
     const users = getUsers();
     if (users[username]) return { error: 'Username already exists.' };
     if (Object.values(users).some(u => u.email === email)) return { error: 'Email already registered.' };
@@ -405,6 +483,45 @@ window.Auth = (function () {
 
   async function login(username, password, remember, options = {}) {
     username = username.trim().toLowerCase();
+    // Try server first
+    const lr = await apiRequest('POST', '/auth/login', { username, password });
+    if (lr.ok && lr.user) {
+      if (lr.banned) {
+        try {
+          sessionStorage.setItem('sb26_banned_preview', lr.user.username);
+          sessionStorage.setItem('sb26_banned_info', JSON.stringify({ username: lr.user.username, display: lr.user.display, avatar: lr.user.avatar, color: lr.user.color, info: lr.info }));
+        } catch (e) {}
+        return { banned: true, info: lr.info };
+      }
+      const users = getUsers();
+      users[lr.user.username] = {
+        username: lr.user.username, display: lr.user.display, email: lr.user.email, salt: '',
+        hash: '', createdAt: lr.user.createdAt, avatar: lr.user.avatar, color: lr.user.color,
+        role: lr.user.role || ROLES.USER, banned: false,
+      };
+      saveUsers(users);
+
+      const existing = getLock(lr.user.username);
+      const tid = getTabId();
+      if (existing && existing.tabId !== tid && !isStale(existing) && !options.force) return { conflict: existing, user: lr.user };
+      if (existing && existing.tabId !== tid && isStale(existing)) clearLock(lr.user.username);
+      setLock(lr.user.username, tid);
+      broadcast('lock', lr.user.username, tid);
+
+      sessionStorage.setItem(SESSION_KEY, lr.user.username);
+      sessionStorage.setItem(SESSION_KEY + '_ts', String(Date.now()));
+      if (remember) localStorage.setItem(REMEMBER_KEY, lr.user.username);
+      else localStorage.removeItem(REMEMBER_KEY);
+      try { window.IPBan && IPBan.registerSelf && IPBan.registerSelf(lr.user.username); } catch (e) {}
+      return { user: lr.user };
+    }
+    if (lr.status === 403 && lr.banned) {
+      try { sessionStorage.setItem('sb26_banned_preview', username); } catch (e) {}
+      return { banned: true, info: lr.info };
+    }
+    if (lr.status === 401) return { error: 'Invalid credentials.' };
+
+    // Fallback to localStorage-only
     const users = getUsers();
     const user = users[username] || Object.values(users).find(u => u.email === username);
     if (!user) return { error: 'User not found.' };
@@ -446,6 +563,42 @@ window.Auth = (function () {
 
   async function forceLogin(username, password, remember) {
     username = username.trim().toLowerCase();
+    // Try server first
+    const lr = await apiRequest('POST', '/auth/login', { username, password });
+    if (lr.ok && lr.user) {
+      if (lr.banned) {
+        try {
+          sessionStorage.setItem('sb26_banned_preview', lr.user.username);
+          sessionStorage.setItem('sb26_banned_info', JSON.stringify({ username: lr.user.username, display: lr.user.display, avatar: lr.user.avatar, color: lr.user.color, info: lr.info }));
+        } catch (e) {}
+        return { banned: true, info: lr.info };
+      }
+      const users = getUsers();
+      users[lr.user.username] = {
+        username: lr.user.username, display: lr.user.display, email: lr.user.email, salt: '',
+        hash: '', createdAt: lr.user.createdAt, avatar: lr.user.avatar, color: lr.user.color,
+        role: lr.user.role || ROLES.USER, banned: false,
+      };
+      saveUsers(users);
+
+      const tid = getTabId();
+      clearLock(lr.user.username);
+      setLock(lr.user.username, tid);
+      broadcast('takeover', lr.user.username, tid);
+      sessionStorage.setItem(SESSION_KEY, lr.user.username);
+      sessionStorage.setItem(SESSION_KEY + '_ts', String(Date.now()));
+      if (remember) localStorage.setItem(REMEMBER_KEY, lr.user.username);
+      else localStorage.removeItem(REMEMBER_KEY);
+      try { window.IPBan && IPBan.registerSelf && IPBan.registerSelf(lr.user.username); } catch (e) {}
+      return { user: lr.user };
+    }
+    if (lr.status === 403 && lr.banned) {
+      try { sessionStorage.setItem('sb26_banned_preview', username); } catch (e) {}
+      return { banned: true, info: lr.info };
+    }
+    if (lr.status === 401) return { error: 'Invalid credentials.' };
+
+    // Fallback to localStorage-only
     const users = getUsers();
     const user = users[username] || Object.values(users).find(u => u.email === username);
     if (!user) return { error: 'User not found.' };
@@ -551,10 +704,13 @@ window.Auth = (function () {
     return lock;
   }
 
-  function initAuthPage() {
+  async function initAuthPage() {
     ensureDefaultOwner();
     if (sessionUser()) { location.replace('index.html'); return; }
     initLockChannel();
+
+    // Sync authoritative data from SQL server (localStorage fallback if offline)
+    await Promise.allSettled([syncUsersFromServer(), syncBansFromServer()]);
 
     const tabs = document.querySelectorAll('.auth-tab');
     const tabsWrap = document.querySelector('.auth-tabs');

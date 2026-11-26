@@ -279,6 +279,18 @@
 
   function readRegistry() { return readJSON(localStorage, REGISTRY_KEY, {}) || {}; }
   function writeRegistry(reg) { writeJSON(localStorage, REGISTRY_KEY, reg); }
+
+  async function apiRequestIPBan(method, path, body) {
+    try {
+      const res = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      return await res.json().catch(() => ({}));
+    } catch (e) { return {}; }
+  }
   function pruneRegistry() {
     const reg = readRegistry();
     const cutoff = Date.now() - 90 * 86400000;
@@ -387,13 +399,31 @@
 
     /* ---------- Read self ban status ---------- */
     async checkSelf() {
+      // Try SQL server first
       const fp = await resolveFingerprint();
       const ip = fingerprintToIP(fp);
-      const bans = readBans();
+      try {
+        const r = await fetch(`/__sb__/ip-ban/check-self?fingerprint=${encodeURIComponent(fp || '')}`, {
+          credentials: 'same-origin',
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.banned && j.entry) {
+            // Mirror to localStorage for offline/sync
+            const bans = readBans();
+            bans.ips[ip] = j.entry;
+            if (j.entry.fingerprint) bans.ips['FP:' + j.entry.fingerprint] = j.entry;
+            writeBans(bans);
+            return j.entry;
+          }
+          return null;
+        }
+      } catch (e) { /* fall through to localStorage */ }
 
+      // Fallback to localStorage
+      const bans = readBans();
       let entry = bans.ips[ip] || null;
       let matchedKey = entry ? ip : null;
-
       if (!entry) {
         const shadow = bans.ips['FP:' + fp];
         if (shadow) { entry = shadow; matchedKey = 'FP:' + fp; }
@@ -405,7 +435,6 @@
         }
       }
       if (!entry) return null;
-
       if (entry.expiresAt != null && Date.now() >= entry.expiresAt) {
         if (matchedKey) this.unban(matchedKey, { silent: true });
         return null;
@@ -425,6 +454,27 @@
     },
 
     list() {
+      // Try SQL server first
+      try {
+        const r = apiRequestIPBan('GET', '/__sb__/ip-ban/list');
+        if (r && r.bans) {
+          const out = [];
+          for (const b of r.bans) {
+            if (b.ip && !b.ip.startsWith('FP:')) out.push([b.ip, b]);
+          }
+          // Mirror to localStorage
+          const bans = readBans();
+          bans.ips = bans.ips || {};
+          for (const b of r.bans) {
+            if (b.ip && !b.ip.startsWith('FP:')) bans.ips[b.ip] = b;
+            if (b.fingerprint) bans.ips['FP:' + b.fingerprint] = b;
+          }
+          writeBans(bans);
+          return out;
+        }
+      } catch (e) { /* fall through to localStorage */ }
+
+      // LocalStorage fallback
       const bans = readBans();
       const out = [];
       let changed = false;
@@ -440,6 +490,21 @@
     },
 
     listHardwareBans() {
+      // Try SQL server first
+      try {
+        const r = apiRequestIPBan('GET', '/__sb__/ip-ban/list');
+        if (r && r.bans) {
+          const out = [];
+          for (const b of r.bans) {
+            if (b.fingerprint && !b.ip?.startsWith('FP:')) {
+              out.push(['FP:' + b.fingerprint, { ...b, ip: 'FP:' + b.fingerprint }]);
+            }
+          }
+          return out;
+        }
+      } catch (e) { /* fall through to localStorage */ }
+
+      // LocalStorage fallback
       const bans = readBans();
       const out = [];
       for (const k in bans.ips) {
@@ -472,6 +537,39 @@
           throw new Error('Refusing to ban own device. Pass { force: true } to override.');
         }
       }
+      // Sync to SQL server (server also enforces self-ban protection)
+      try {
+        const r = await fetch('/__sb__/ip-ban/ban', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            ip, fingerprint: opts.fingerprint || null, reason: opts.reason || 'IP + hardware ban',
+            durationKey: opts.duration, durationMs: opts.duration ? parseDuration(opts.duration) : null,
+            bannedBy: opts.bannedBy || (window.ME && window.ME.username) || 'system',
+            force: !!opts.force,
+          }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          // Mirror to localStorage
+          const bans = readBans();
+          bans.ips[ip] = j.ban || { ip, fingerprint: opts.fingerprint || null, reason: opts.reason, bannedAt: Date.now(), expiresAt: null, permanent: true };
+          if (opts.fingerprint) bans.ips['FP:' + opts.fingerprint] = bans.ips[ip];
+          writeBans(bans);
+          this._broadcast('ip-ban', { ip, entry: bans.ips[ip] });
+          return bans.ips[ip];
+        }
+        if (r.status === 403) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j.error || 'Refusing to ban own device');
+        }
+      } catch (e) {
+        if (e.message && e.message.includes('Refusing to ban')) throw e;
+        // Fall through to localStorage fallback
+      }
+
+      // LocalStorage fallback
       const bans = readBans();
       const now = Date.now();
       const bannedBy = opts.bannedBy || (window.ME && window.ME.username) || 'system';
@@ -495,6 +593,7 @@
         const shadowKey = 'FP:' + fingerprint;
         if (!bans.ips[shadowKey]) bans.ips[shadowKey] = { ...entry, ip, id: mkBanId('HWBAN') };
       }
+      bans.history = bans.history || [];
       bans.history.push({
         action: 'ip-ban', username: ip, reason, bannedBy,
         at: now, atISO: new Date(now).toISOString(), atLocal: new Date(now).toLocaleString(),
@@ -528,6 +627,25 @@
       if (!fp || !/^HW-[A-F0-9]+$/i.test(fp)) {
         return { error: 'Invalid fingerprint format. Must be HW- followed by hex.' };
       }
+      // Sync to SQL server
+      try {
+        const r = apiRequestIPBan('POST', '/__sb__/ip-ban/ban', {
+          ip: 'FP:' + fp, fingerprint: fp, reason: opts.reason || 'Hardware ban',
+          durationKey: opts.duration, durationMs: opts.duration ? parseDuration(opts.duration) : null,
+          bannedBy: opts.bannedBy || (window.ME && window.ME.username) || 'system',
+          force: !!opts.force,
+        });
+        if (r.ok || r.ban) {
+          const bans = readBans();
+          const shadowKey = 'FP:' + fp;
+          bans.ips[shadowKey] = r.ban || { ip: shadowKey, fingerprint: fp, reason: opts.reason || 'Hardware ban', bannedAt: Date.now(), expiresAt: null, permanent: true };
+          writeBans(bans);
+          this._broadcast('ip-ban', { ip: shadowKey, entry: bans.ips[shadowKey] });
+          return { success: true, entry: bans.ips[shadowKey] };
+        }
+      } catch (e) { /* fall through to localStorage */ }
+
+      // LocalStorage fallback
       const bans = readBans();
       const now = Date.now();
       const bannedBy = opts.bannedBy || (window.ME && window.ME.username) || 'system';
@@ -546,6 +664,7 @@
         signal: 'hardware-only',
       };
       bans.ips[shadowKey] = entry;
+      bans.history = bans.history || [];
       bans.history.push({
         action: 'hw-ban', username: 'FP:' + fp.slice(3, 15),
         reason, bannedBy,
@@ -578,6 +697,10 @@
 
     /* ---------- Unban / extend ---------- */
     unban(ip, opts = {}) {
+      // Sync to SQL server
+      apiRequestIPBan('POST', '/__sb__/ip-ban/unban', { ip }).catch(() => {});
+
+      // LocalStorage (authoritative cache)
       const bans = readBans();
       let removed = false;
       if (bans.ips[ip]) { delete bans.ips[ip]; removed = true; }
@@ -591,6 +714,7 @@
       }
       if (!opts.silent) {
         const now = Date.now();
+        bans.history = bans.history || [];
         bans.history.push({
           action: 'ip-unban', username: ip,
           reason: opts.reason || '',

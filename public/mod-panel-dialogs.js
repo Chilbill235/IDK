@@ -247,6 +247,7 @@ if (!window.__sb_mod_dialogs_v83) {
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
       const reason = (overlay.querySelector('#banUserReasonInput').value || '').trim();
       if (settings.requireReason && !reason) return mpToast({ title:'Reason required', msg:'Enter a reason', type:'warn' });
+      if (username.toLowerCase() === (ME && ME.username ? ME.username.toLowerCase() : '')) { mpToast({ title:'Cannot self-ban', msg:'You cannot ban yourself', type:'warn' }); return; }
       try { Auth.banUser(username, reason || 'Rule violation', selected, { automated:false }); } catch (e) {}
       mpLogAction('ban-username', username, { reason });
       mpToast({ title:'Username banned', msg:`@${username}`, type:'error' });
@@ -297,8 +298,8 @@ if (!window.__sb_mod_dialogs_v83) {
       const reason = (overlay.querySelector('#banHWReasonInput').value || '').trim();
       if (settings.requireReason && !reason) return mpToast({ title:'Reason required', msg:'Enter a reason', type:'warn' });
       const isSelf = selectedFP === selfFP;
-      if (isSelf && !confirm('Ban YOUR own device? You will lose access immediately.')) return;
-      const res = window.IPBan.banByFingerprint(selectedFP, { reason: reason || 'Hardware ban', duration: selectedDur, bannedBy: ME.username, force: isSelf });
+      if (isSelf) { mpToast({ title:'Cannot self-ban', msg:'You cannot ban your own device', type:'warn' }); return; }
+      const res = window.IPBan.banByFingerprint(selectedFP, { reason: reason || 'Hardware ban', duration: selectedDur, bannedBy: ME.username });
       if (res && res.error) return mpToast({ title:'Cannot ban', msg:res.error, type:'error' });
       mpLogAction('hw-ban', username, { reason, fingerprint: selectedFP });
       mpToast({ title:'Hardware banned', msg:`@${username}`, type:'success' });
@@ -677,6 +678,7 @@ if (!window.__sb_mod_dialogs_v83) {
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
       const reason = (overlay.querySelector('#banReasonInput').value || '').trim();
       if (settings.requireReason && !reason) return mpToast({ title:'Reason required', msg:'Enter a reason', type:'warn' });
+      if (username.toLowerCase() === (ME && ME.username ? ME.username.toLowerCase() : '')) { mpToast({ title:'Cannot self-ban', msg:'You cannot ban yourself', type:'warn' }); return; }
       try { Auth.banUser(username, reason || 'Rule violation', selected, { automated:false }); } catch (e) {}
       mpLogAction('ban', username, { reason: reason || 'Rule violation' });
       mpToast({ title:'Banned', msg:`@${username}`, type:'error' });
@@ -716,6 +718,7 @@ if (!window.__sb_mod_dialogs_v83) {
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
       const reason = (overlay.querySelector('#muteReasonInput').value || '').trim();
       if (settings.requireReasonMutes && !reason) return mpToast({ title:'Reason required', msg:'Enter a reason', type:'warn' });
+      if (username.toLowerCase() === (ME && ME.username ? ME.username.toLowerCase() : '')) { mpToast({ title:'Cannot self-mute', msg:'You cannot mute yourself', type:'warn' }); return; }
       try { Auth.muteUser(username, reason || 'Muted by moderator', selected); } catch (e) {}
       mpLogAction('mute', username, { reason });
       mpToast({ title:'Muted', msg:`@${username}`, type:'success' });

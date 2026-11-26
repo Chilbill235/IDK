@@ -980,6 +980,91 @@
   if (window.__sbProfileV83_2) return;
   window.__sbProfileV83_2 = true;
 
+  // ===== Responsive profile panel CSS (mobile + PC) =====
+  (function injectProfileResponsiveCSS() {
+    if (document.getElementById('sb-profile-responsive-css')) return;
+    const s = document.createElement('style');
+    s.id = 'sb-profile-responsive-css';
+    s.textContent = `
+      /* Make the body scrollable, keep header + footer fixed */
+      .profile-panel-v2 .settings-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+      }
+      .profile-panel-v2 .settings-head {
+        flex-shrink: 0;
+      }
+      .profile-panel-v2 .pv2-hero {
+        flex-shrink: 0;
+      }
+      .profile-panel-v2 .pv2-stats-grid {
+        flex-shrink: 0;
+      }
+      .profile-panel-v2 .pv2-tabs {
+        flex-shrink: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      .profile-panel-v2 .pv2-body {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: calc(26px + env(safe-area-inset-bottom));
+      }
+      /* Sticky save/cancel footer */
+      .profile-panel-v2 .mod-dialog-foot {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: var(--surface-2);
+        padding-top: 10px;
+        padding-bottom: calc(14px + env(safe-area-inset-bottom));
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -8px 24px rgba(0,0,0,.25);
+      }
+      /* Tabs scroll hint & touch target */
+      .pv2-tab {
+        min-width: 90px;
+        white-space: nowrap;
+        padding: 10px 14px;
+        font-size: 12px;
+      }
+      @media (max-width: 600px) {
+        .pv2-tab { min-width: 78px; padding: 8px 10px; font-size: 11px; gap: 5px; }
+        .pv2-tab-ico { font-size: 14px; }
+        .pv2-body { padding: 16px 16px 26px; gap: 14px; }
+        .pv2-hero { padding: 20px 16px 16px; }
+        .pv2-avatar { width: 80px; height: 80px; font-size: 26px; }
+        .pv2-display { font-size: 20px; }
+        .pv2-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1px; }
+        .pv2-stat { padding: 10px 6px; }
+        .pv2-stat-val { font-size: 15px; }
+        .pv2-input { font-size: 16px; } /* prevent iOS zoom on focus */
+        .pv2-color { width: 34px; height: 34px; }
+        .pv2-seg { gap: 3px; padding: 3px; }
+        .pv2-seg button { padding: 7px 10px; font-size: 11px; min-width: 44px; }
+        .mod-dialog-foot .btn { min-height: 48px; font-size: 13px; padding: 12px 18px; }
+      }
+      @media (min-width: 601px) {
+        .pv2-body { padding: 22px 24px 70px; gap: 18px; }
+        .pv2-color { width: 30px; height: 30px; }
+        .pv2-seg button { padding: 8px 13px; min-width: 44px; }
+        .mod-dialog-foot .btn { min-height: 44px; }
+      }
+      /* Ensure segmented controls and color rows don't clip */
+      .pv2-seg { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .pv2-colors { gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .pv2-hint { gap: 10px; flex-wrap: wrap; }
+      .pv2-hint-count { min-width: 44px; text-align: right; }
+    `;
+    document.head.appendChild(s);
+  })();
+
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   function hexToRgba(hex, a) {
@@ -1598,6 +1683,13 @@
       if (window.Live) { try { Live.emit('userList'); Live.emit('onlineUsers'); } catch (e) {} }
 
       try { window.toast({ title: 'Profile saved', msg: 'Live across all your open tabs', type: 'success', dur: 2600 }); } catch (e) {}
+
+      // Persist to SQL backend (fire and forget; localStorage already saved above)
+      fetch('/__sb__/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      }).catch(e => console.warn('[profile] sql sync failed', e));
 
       setTimeout(() => close(), 380);
     };

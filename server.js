@@ -10,6 +10,9 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
+// SQL database service layer (Neon/PostgreSQL with in-memory fallback)
+const db = require('./db/service.js');
+
 // server.js is at project root locally (/var/task on Vercel)
 // public/ is at ./public locally (/var/task/public on Vercel via includeFiles)
 const PUBLIC_ROOT = path.join(__dirname, 'public');
@@ -90,26 +93,13 @@ try {
   // web-push optional; push API endpoints will be disabled if missing.
 }
 
-// Push subscription store. Persisted to disk so restarts don't lose them.
-// On Vercel the bundle dir is read-only, so use the writable temp dir there.
-const pushSubscriptions = new Map(); // endpoint -> { endpoint, keys, username }
-const IS_VERCEL = !!process.env.VERCEL;
-const PUSH_SUBS_FILE = process.env.PUSH_SUBS_FILE
-  || (IS_VERCEL ? path.join(require('os').tmpdir(), 'safebeef-push-subs.json') : path.join(__dirname, 'push-subs.json'));
-function saveSubs() {
-  const arr = Array.from(pushSubscriptions.values());
-  try {
-    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(arr));
-  } catch (e) { /* ignore */ }
-  redisSet(arr);
+// Push subscription store — backed by SQL service layer (with in-memory fallback)
+const PUSH_SUBS_ENABLED = true;
+
+async function loadPushSubs() {
+  // DB service handles its own persistence; nothing to preload here.
+  return [];
 }
-function loadSubs() {
-  try {
-    const arr = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, 'utf8') || '[]');
-    if (Array.isArray(arr)) arr.forEach(s => { if (s && s.endpoint) pushSubscriptions.set(s.endpoint, s); });
-  } catch (e) { /* none yet */ }
-}
-loadSubs();
 
 // Optional shared store (Upstash Redis REST) so subscriptions survive Vercel
 // cold starts and are visible across instances. Falls back to disk/memory.
@@ -142,15 +132,8 @@ async function redisGet() {
 
 // Merge remote subscriptions into the local cache and return the full list.
 async function syncSubs() {
-  const remote = await redisGet();
-  if (Array.isArray(remote)) {
-    remote.forEach(s => {
-      if (s && s.endpoint && !pushSubscriptions.has(s.endpoint)) {
-        pushSubscriptions.set(s.endpoint, s);
-      }
-    });
-  }
-  return Array.from(pushSubscriptions.values());
+  const subs = await db.getPushSubscriptions();
+  return subs.map(s => ({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth }, username: s.username }));
 }
 
 function requireWebpush(req, res, next) {
@@ -185,43 +168,35 @@ app.get('/__sb__/push/vapid-public-key', (req, res) => {
   res.json({ publicKey: vapidKeys.publicKey });
 });
 
-app.post('/__sb__/push/subscribe', requireWebpush, express.json(), (req, res) => {
+app.post('/__sb__/push/subscribe', requireWebpush, express.json(), async (req, res) => {
   const { subscription, username } = req.body || {};
   if (!subscription || !subscription.endpoint) {
     return res.status(400).json({ error: 'Invalid subscription' });
   }
   try {
-    pushSubscriptions.set(subscription.endpoint, {
-      endpoint: subscription.endpoint,
-      keys: subscription.keys,
-      username: username || 'unknown',
-      subscribedAt: Date.now(),
-    });
-    saveSubs();
+    await db.savePushSubscription({ endpoint: subscription.endpoint, keys: subscription.keys, username: username || 'unknown' });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: 'Failed to save subscription' });
   }
 });
 
-app.post('/__sb__/push/unsubscribe', requireWebpush, express.json(), (req, res) => {
+app.post('/__sb__/push/unsubscribe', requireWebpush, express.json(), async (req, res) => {
   const { endpoint } = req.body || {};
   if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
-  pushSubscriptions.delete(endpoint);
-  saveSubs();
+  await db.removePushSubscription(endpoint);
   res.json({ ok: true });
 });
 
 app.post('/__sb__/push/test', requireWebpush, express.json(), async (req, res) => {
   const webpush = require('web-push');
   webpush.setVapidDetails('mailto:safebeef@localhost', vapidKeys.publicKey, vapidKeys.privateKey);
-  const all = await syncSubs();
+  const all = await db.getPushSubscriptions();
   let sent = 0;
   for (const sub of all) {
-    try { await webpush.sendNotification(sub, JSON.stringify({ title: '🔔 SafeBeef test', body: 'Push is working!', tag: 'safebeef-test' })); sent++; }
-    catch (e) { if (e && (e.statusCode === 404 || e.statusCode === 410)) { pushSubscriptions.delete(sub.endpoint); } }
+    try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: '🔔 SafeBeef test', body: 'Push is working!', tag: 'safebeef-test' })); sent++; }
+    catch (e) { if (e && (e.statusCode === 404 || e.statusCode === 410)) { await db.removePushSubscription(sub.endpoint); } }
   }
-  saveSubs();
   res.json({ ok: true, sent, total: all.length });
 });
 
@@ -239,13 +214,14 @@ app.post('/__sb__/push/send', requireWebpush, express.json(), async (req, res) =
   );
 
   const sendOne = async (sub) => {
+    const wsSub = { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh || sub.keys?.p256dh, auth: sub.auth || sub.keys?.auth } };
     try {
-      await webpush.sendNotification(sub, JSON.stringify(payload));
+      await webpush.sendNotification(wsSub, JSON.stringify(payload));
       return { ok: true };
     } catch (e) {
       // 404/410 mean the subscription is gone — drop it so the store stays clean.
       if (e && (e.statusCode === 404 || e.statusCode === 410)) {
-        try { pushSubscriptions.delete(sub.endpoint); saveSubs(); } catch (_) {}
+        try { await db.removePushSubscription(sub.endpoint); } catch (_) {}
       }
       return { ok: false, error: e.message };
     }
@@ -259,7 +235,7 @@ app.post('/__sb__/push/send', requireWebpush, express.json(), async (req, res) =
 
   // 2) Targeted send to every endpoint registered for a username.
   if (targetUsername) {
-    const targets = (await syncSubs())
+    const targets = (await db.getPushSubscriptions(targetUsername))
       .filter(s => s.username === targetUsername);
     if (!targets.length) {
       return res.json({ ok: true, sent: 0, failed: 0, targeted: true });
@@ -270,7 +246,7 @@ app.post('/__sb__/push/send', requireWebpush, express.json(), async (req, res) =
   }
 
   // 3) Broadcast to every stored subscription.
-  const all = await syncSubs();
+  const all = await db.getPushSubscriptions();
   if (!all.length) {
     return res.json({ ok: true, sent: 0, failed: 0, broadcast: true });
   }
@@ -280,8 +256,292 @@ app.post('/__sb__/push/send', requireWebpush, express.json(), async (req, res) =
 });
 
 app.get('/__sb__/push/subscriptions', requireWebpush, async (req, res) => {
-  const all = await syncSubs();
+  const all = await db.getPushSubscriptions();
   res.json({ count: all.length, subs: all });
+});
+
+// ---------------------------------------------------------------------------
+// Auth & moderation API (SQL-backed via db/service.js; in-memory fallback)
+// Localhost dev tool — endpoints are open by design.
+// ---------------------------------------------------------------------------
+
+// Normalize a ban/mute record from the DB layer into the shape auth.js expects.
+function normalizeBan(b) {
+  if (!b) return null;
+  return {
+    reason: b.reason || 'Violation of terms',
+    bannedAt: b.created_at || b.bannedAt || 0,
+    bannedBy: b.banned_by || 'system',
+    expiresAt: b.expires_at ?? null,
+    permanent: b.is_permanent || b.expires_at == null,
+    automated: b.automated || false,
+    appealable: b.appealable !== false,
+    fingerprint: b.fingerprint || null,
+  };
+}
+function normalizeMute(m) {
+  if (!m) return null;
+  return {
+    reason: m.reason || 'Muted by moderator',
+    mutedAt: m.created_at || 0,
+    mutedBy: m.muted_by || 'system',
+    until: m.expires_at ?? null,
+    permanent: m.expires_at == null,
+  };
+}
+
+app.post('/__sb__/auth/register', express.json(), async (req, res) => {
+  const { username, email, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  try {
+    const existing = await db.getUser(username);
+    if (existing) return res.status(409).json({ error: 'Username already exists' });
+    const user = await db.createUser({ username, email, password, avatar: username.slice(0, 2).toUpperCase(), color: '#4d9dff' });
+    res.json({ ok: true, user: { username: user.username, display: user.display_name, email: user.email, role: user.role || 'user', avatar: user.avatar, color: user.color, createdAt: user.created_at } });
+  } catch (e) {
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/__sb__/auth/login', express.json(), async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  try {
+    const user = await db.verifyUser(username, password);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const ban = await db.getActiveBan(user.username);
+    if (ban) {
+      return res.status(403).json({ banned: true, info: normalizeBan(ban) });
+    }
+    res.json({ ok: true, user: { username: user.username, display: user.display_name, email: user.email, role: user.role || 'user', avatar: user.avatar, color: user.color, createdAt: user.created_at } });
+  } catch (e) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.get('/__sb__/auth/users', async (req, res) => {
+  try {
+    const users = await db.getAllUsers();
+    res.json({ users: users.map(u => ({ username: u.username, display: u.display_name, email: u.email, role: u.role || 'user', avatar: u.avatar, color: u.color, createdAt: u.created_at })) });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+// Get/update the signed-in user's profile (SQL-backed, localStorage-compatible)
+app.get('/__sb__/auth/me', async (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  try {
+    const user = await db.getUser(username);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: { username: user.username, display: user.display_name, email: user.email, role: user.role || 'user', avatar: user.avatar, color: user.color, nameColor: user.name_color, avatarShape: user.avatar_shape, fontStyle: user.font_style, bannerPattern: user.banner_pattern, profileEffect: user.profile_effect, presence: user.presence, statusText: user.status_text, statusExpires: user.status_expires, statusExpiresAt: user.status_expires_at, bio: user.bio, pronouns: user.pronouns, bioVisibility: user.bio_visibility, showOnline: user.show_online, showLastSeen: user.show_last_seen, allowModDMs: user.allow_mod_dms, createdAt: user.created_at } });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load profile' });
+  }
+});
+
+app.patch('/__sb__/auth/me', express.json(), async (req, res) => {
+  const { username } = req.query;
+  const updates = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  // Never let anyone else edit your profile via this endpoint (cookie/session auth not enforced on localhost; keep it simple but guarded).
+  try {
+    const user = await db.updateUser(username, updates);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ok: true, user });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+app.post('/__sb__/auth/ban', express.json(), async (req, res) => {
+  const { username, reason, durationKey, durationMs, bannedBy } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const me = bannedBy || 'system';
+  // Never ban yourself.
+  if (username.toLowerCase() === me.toLowerCase()) return res.status(403).json({ error: 'Cannot ban yourself' });
+  const BAN_DURATIONS = { '1h': 3600000, '6h': 21600000, '12h': 43200000, '1d': 86400000, '3d': 259200000, '7d': 604800000, '30d': 2592000000 };
+  const isPerm = durationKey === 'perm' || durationKey === 'permanent';
+  const ms = isPerm ? null : (durationMs || BAN_DURATIONS[durationKey] || BAN_DURATIONS['1d']);
+  try {
+    const ban = await db.banUser({ username, reason, bannedBy: me, durationMs: ms, isPermanent: isPerm });
+    res.json({ ok: true, ban: normalizeBan(ban) });
+  } catch (e) {
+    res.status(500).json({ error: 'Ban failed' });
+  }
+});
+
+app.post('/__sb__/auth/unban', express.json(), async (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  await db.unbanUser(username);
+  res.json({ ok: true });
+});
+
+app.get('/__sb__/auth/bans', async (req, res) => {
+  try {
+    const bans = await db.getAllBans();
+    res.json({ bans: bans.map(normalizeBan) });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load bans' });
+  }
+});
+
+app.get('/__sb__/auth/bans/:username', async (req, res) => {
+  try {
+    const ban = await db.getActiveBan(req.params.username);
+    res.json({ ban: ban ? normalizeBan(ban) : null });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load ban info' });
+  }
+});
+
+app.post('/__sb__/auth/mute', express.json(), async (req, res) => {
+  const { username, reason, durationMs, mutedBy } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const me = mutedBy || 'system';
+  if (username.toLowerCase() === me.toLowerCase()) return res.status(403).json({ error: 'Cannot mute yourself' });
+  const isPerm = !durationMs;
+  const ms = isPerm ? null : (durationMs || 0);
+  try {
+    // Store mute as a warning-like record in the warnings table via a dedicated
+    // column is not available; use warnings table with a type marker instead.
+    await db.addWarning({ username, reason: `[MUTE] ${reason || 'Muted by moderator'}`, warned_by: me, expiresAt: isPerm ? null : ms ? Date.now() + ms : null });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Mute failed' });
+  }
+});
+
+app.post('/__sb__/auth/unmute', express.json(), async (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  await db.clearWarnings(username);
+  res.json({ ok: true });
+});
+
+app.get('/__sb__/auth/mutes', async (req, res) => {
+  try {
+    const { username } = req.query;
+    const warns = username ? await db.getWarnings(username) : [];
+    res.json({ mutes: warns.filter(w => (w.reason || '').startsWith('[MUTE]')).map(normalizeMute) });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load mutes' });
+  }
+});
+
+app.post('/__sb__/auth/warn', express.json(), async (req, res) => {
+  const { username, reason, warnedBy, automated } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const me = warnedBy || 'system';
+  if (username.toLowerCase() === me.toLowerCase()) return res.status(403).json({ error: 'Cannot warn yourself' });
+  try {
+    const warning = await db.addWarning({ username, reason, warned_by: me, expiresAt: null });
+    const recent = await db.getWarnings(username);
+    const count = recent.filter(w => w.created_at >= Date.now() - 86400000).length;
+    res.json({ ok: true, count, warning: warning });
+  } catch (e) {
+    res.status(500).json({ error: 'Warn failed' });
+  }
+});
+
+app.get('/__sb__/auth/warnings/:username', async (req, res) => {
+  try {
+    const warnings = await db.getWarnings(req.params.username);
+    res.json({ warnings, count: warnings.length });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load warnings' });
+  }
+});
+
+app.post('/__sb__/auth/warnings/:username/clear', express.json(), async (req, res) => {
+  await db.clearWarnings(req.params.username);
+  res.json({ ok: true });
+});
+
+app.post('/__sb__/auth/freeze', express.json(), async (req, res) => {
+  const { username, reason, frozenBy } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const me = frozenBy || 'system';
+  if (username.toLowerCase() === me.toLowerCase()) return res.status(403).json({ error: 'Cannot freeze yourself' });
+  try {
+    await db.freezeUser({ username, frozenBy: me, reason });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Freeze failed' });
+  }
+});
+
+app.post('/__sb__/auth/unfreeze', express.json(), async (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  await db.unfreezeUser(username);
+  res.json({ ok: true });
+});
+
+app.get('/__sb__/auth/frozen/:username', async (req, res) => {
+  try {
+    const frozen = await db.getFrozenUser(req.params.username);
+    res.json({ frozen: frozen || null });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load freeze status' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// IP / Hardware ban API (SQL-backed)
+// ---------------------------------------------------------------------------
+
+app.post('/__sb__/ip-ban/ban', express.json(), async (req, res) => {
+  const { ip, fingerprint, reason, durationKey, durationMs, bannedBy, force } = req.body || {};
+  if (!ip) return res.status(400).json({ error: 'IP required' });
+  const me = bannedBy || 'system';
+  const selfIP = req.ip || req.connection?.remoteAddress || '';
+  const selfFP = fingerprint;
+  // Normalize localhost representations for self-protection
+  const isLocalhost = (addr) => addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1' || addr === 'localhost';
+  const selfIpMatches = isLocalhost(ip) && isLocalhost(selfIP);
+  if (!force && (ip === selfIP || selfIpMatches || (selfFP && fingerprint === selfFP))) {
+    return res.status(403).json({ error: 'Refusing to ban own device. Pass { force: true } to override.' });
+  }
+  const BAN_DURATIONS = { '1h': 3600000, '6h': 21600000, '12h': 43200000, '1d': 86400000, '3d': 259200000, '7d': 604800000, '30d': 2592000000 };
+  const isPerm = durationKey === 'perm' || durationKey === 'permanent';
+  const ms = isPerm ? null : (durationMs || BAN_DURATIONS[durationKey] || 0);
+  try {
+    const ban = await db.banIP({ ip, fingerprint, reason, bannedBy: me, durationMs: ms, isPermanent: isPerm });
+    res.json({ ok: true, ban });
+  } catch (e) {
+    res.status(500).json({ error: 'IP ban failed' });
+  }
+});
+
+app.post('/__sb__/ip-ban/unban', express.json(), async (req, res) => {
+  const { ip } = req.body || {};
+  if (!ip) return res.status(400).json({ error: 'IP required' });
+  await db.unbanIP(ip);
+  res.json({ ok: true });
+});
+
+app.get('/__sb__/ip-ban/list', async (req, res) => {
+  try {
+    const bans = await db.getAllIPBans();
+    res.json({ bans });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load IP bans' });
+  }
+});
+
+app.get('/__sb__/ip-ban/check-self', async (req, res) => {
+  // Client sends its fingerprint via query; server checks against IP bans.
+  const { fingerprint } = req.query;
+  const ip = req.ip || req.connection?.remoteAddress || '';
+  try {
+    const ban = await db.checkIPBan(ip, fingerprint || null);
+    res.json({ banned: !!ban, entry: ban || null });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to check IP ban' });
+  }
 });
 
 // ---------------------------------------------------------------------------

@@ -542,7 +542,8 @@ function openModPanel() {
         if (act === 'exit') { bulkMode = false; selectedUsers.clear(); renderBody(); return; }
         if (act === 'clear') { selectedUsers.clear(); renderBody(); return; }
         if (!selectedUsers.size) return mpToast({ title:'No users', msg:'Select at least one user', type:'warn' });
-        const names = [...selectedUsers];
+        const names = [...selectedUsers].filter(n => n.toLowerCase() !== (ME && ME.username ? ME.username.toLowerCase() : ''));
+        if (names.length === 0) { mpToast({ title:'Cannot self-moderate', msg:'You cannot ban/mute/warn yourself', type:'warn' }); return; }
         const verb = act === 'mute' ? 'mute' : act === 'ban' ? 'ban' : 'warn';
         const ok = await sbConfirm({ icon: '👥', title: `Bulk ${verb}?`, message: `Apply ${verb} to ${names.length} user${names.length===1?'':'s'}?`, confirmText: `Yes, ${verb}`, confirmClass: act === 'ban' ? 'danger' : 'primary' });
         if (!ok) return;
