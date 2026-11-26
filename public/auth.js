@@ -983,7 +983,7 @@ window.Auth = (function () {
       }
 
       setTimeout(async () => {
-        const res = createUser(data);
+        const res = await createUser(data);
         if (res.error) { setBtnLoading(btn, false); flashError('registerError', res.error); return; }
         const loginRes = await login(data.username, data.password, true);
         if (loginRes.ipBanned) { setBtnLoading(btn, false); location.replace('banned.html'); return; }
