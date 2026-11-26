@@ -57,13 +57,75 @@ window.Auth = (function () {
     }
   }
 
-  async function syncWarningsFromServer() {
-    const r = await apiRequest('GET', '/auth/warnings/' + (window.ME ? window.ME.username : ''));
+  async function syncMutesFromServer() {
+    const r = await apiRequest('GET', '/auth/mutes');
+    if (!r.error && r.mutes) {
+      const mutes = {};
+      for (const [username, entry] of Object.entries(r.mutes)) {
+        mutes[username] = { ...entry, mutedAt: entry.mutedAt || Date.now(), until: entry.until ?? null };
+      }
+      saveMutes(mutes);
+    }
+  }
+
+  async function syncFrozenFromServer() {
+    const r = await apiRequest('GET', '/auth/frozen/all');
+    if (!r.error && r.frozen) {
+      const frozen = {};
+      for (const [username, entry] of Object.entries(r.frozen)) {
+        frozen[username] = { ...entry, at: entry.created_at || entry.at || Date.now() };
+      }
+      saveFrozen(frozen);
+    }
+  }
+
+  async function syncSlowModeFromServer() {
+    const r = await apiRequest('GET', '/auth/slowmode/all');
+    if (!r.error && r.slowmode) {
+      const slow = {};
+      for (const [username, entry] of Object.entries(r.slowmode)) {
+        slow[username] = { ...entry, since: entry.created_at || entry.since || Date.now() };
+      }
+      saveSlowMode(slow);
+    }
+  }
+
+  async function syncWarningsFromServer(username) {
+    const r = await apiRequest('GET', '/auth/warnings/' + (username || (window.ME ? window.ME.username : '')));
     if (!r.error && r.warnings) {
       const all = {};
-      all[window.ME.username] = r.warnings.map(w => ({ reason: w.reason, at: w.created_at || Date.now(), by: w.warned_by || 'system', automated: w.automated }));
+      all[username || window.ME?.username] = r.warnings.map(w => ({ reason: w.reason, at: w.created_at || Date.now(), by: w.warned_by || 'system', automated: w.automated }));
       saveWarnings(all);
     }
+  }
+
+  async function syncAllFromServer(username) {
+    await Promise.allSettled([
+      syncUsersFromServer(),
+      syncBansFromServer(),
+      syncMutesFromServer(),
+      syncFrozenFromServer(),
+      syncSlowModeFromServer(),
+      syncWarningsFromServer(username),
+    ]);
+  }
+
+  // Push local changes to server
+  async function pushBansToServer(bans) {
+    // Individual ban/unban calls are made at time of action; this is for bulk sync if needed
+    return true;
+  }
+
+  async function pushMutesToServer(mutes) {
+    return true;
+  }
+
+  async function pushFrozenToServer(frozen) {
+    return true;
+  }
+
+  async function pushSlowModeToServer(slow) {
+    return true;
   }
 
   function hash(str) {
@@ -288,6 +350,45 @@ window.Auth = (function () {
     return true;
   }
 
+  function freezeUser(username, reason) {
+    if (isPrivileged(username)) return null;
+    const frozen = getFrozen();
+    frozen[username] = { reason: reason || 'Frozen by auto-mod', at: Date.now(), by: current()?.username || 'system' };
+    saveFrozen(frozen);
+    apiRequest('POST', '/auth/freeze', { username, reason: frozen[username].reason, frozenBy: frozen[username].by }).catch(() => {});
+    try { window.RT?.emit?.('freeze', { username, reason: frozen[username].reason }); } catch (e) {}
+    sessionStorage.setItem('sb26_frozen', '1');
+    return frozen[username];
+  }
+
+  function unfreezeUser(username) {
+    const frozen = getFrozen();
+    delete frozen[username];
+    saveFrozen(frozen);
+    apiRequest('POST', '/auth/unfreeze', { username }).catch(() => {});
+    try { window.RT?.emit?.('unfreeze', { username }); } catch (e) {}
+    sessionStorage.removeItem('sb26_frozen');
+    return true;
+  }
+
+  function getFrozen() { try { return JSON.parse(localStorage.getItem('sb26_frozen_users') || '{}'); } catch (e) { return {}; } }
+  function saveFrozen(f) { localStorage.setItem('sb26_frozen_users', JSON.stringify(f)); }
+
+  function setSlowMode(username, seconds, setBy) {
+    const slow = getSlowMode();
+    slow[username] = { seconds, since: Date.now(), by: setBy || current()?.username || 'system' };
+    saveSlowMode(slow);
+    apiRequest('POST', '/auth/slowmode', { username, seconds, setBy: slow[username].by }).catch(() => {});
+    return slow[username];
+  }
+
+  function clearSlowMode(username) {
+    const slow = getSlowMode();
+    delete slow[username];
+    saveSlowMode(slow);
+    apiRequest('POST', '/auth/slowmode/clear', { username }).catch(() => {});
+  }
+
   function canSendMessages(username) {
     if (isPrivileged(username)) return null;
     if (isUserBanned(username)) {
@@ -322,7 +423,23 @@ window.Auth = (function () {
     localStorage.setItem(lastKey, String(Date.now()));
   }
 
-  const WARN_THRESHOLDS = { windowMs: 86400000, warnBan: 3, warnBan2: 4, warnBan3: 5, warnBanHard: 7, warnBanMax: 10 };
+  const WARN_THRESHOLDS = { 
+    windowMs: 86400000, 
+    // Graduated response thresholds (warnings in 24h)
+    warnMute: 2,        // 2 warnings -> mute
+    warnFreeze: 3,      // 3 warnings -> freeze
+    warnSlowMode: 4,    // 4 warnings -> slow mode
+    warnBan: 5,         // 5 warnings -> temp ban (1h)
+    warnBan2: 6,        // 6 warnings -> temp ban (6h)
+    warnBan3: 7,        // 7 warnings -> temp ban (1d)
+    warnBanHard: 8,     // 8 warnings -> temp ban (7d)
+    warnBanMax: 10,     // 10 warnings -> perm ban
+    // Action durations
+    muteDuration: '1h',
+    freezeDuration: '6h',
+    slowModeSeconds: 30,
+    banDurations: { 5: '1h', 6: '6h', 7: '1d', 8: '7d', 10: 'perm' }
+  };
 
   function getWarnings() { try { return JSON.parse(localStorage.getItem(WARN_KEY) || '{}'); } catch (e) { return {}; } }
   function saveWarnings(w) { localStorage.setItem(WARN_KEY, JSON.stringify(w)); }
@@ -335,10 +452,10 @@ window.Auth = (function () {
   }
 
   function warnUser(username, reason, opts = {}) {
-    if (isPrivileged(username)) return { count: 0, recent: [], ban: null, ignored: true };
-    if (isWhitelisted(username)) return { count: 0, recent: [], ban: null, ignored: true };
+    if (isPrivileged(username)) return { count: 0, recent: [], actions: [], ignored: true };
+    if (isWhitelisted(username)) return { count: 0, recent: [], actions: [], ignored: true };
     const me = current()?.username;
-    if (username.toLowerCase() === (me || '').toLowerCase()) return { count: 0, recent: [], ban: null, ignored: true };
+    if (username.toLowerCase() === (me || '').toLowerCase()) return { count: 0, recent: [], actions: [], ignored: true };
     const all = getWarnings();
     all[username] = all[username] || [];
     all[username].push({ reason: reason || 'Warning', at: Date.now(), by: current()?.username || 'system', automated: !!opts.automated });
@@ -348,13 +465,30 @@ window.Auth = (function () {
     const count = recent.length;
     try { window.RT?.warn(username, { count, reason, automated: !!opts.automated }); } catch (e) {}
     apiRequest('POST', '/auth/warn', { username, reason, warnedBy: current()?.username || 'system', automated: !!opts.automated }).catch(() => {});
+    
+    const actions = [];
     let banResult = null;
-    if (count >= WARN_THRESHOLDS.warnBanMax) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, 'perm', { automated: true, appealable: true });
-    else if (count >= WARN_THRESHOLDS.warnBanHard) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, '7d', { automated: true, appealable: true });
-    else if (count >= WARN_THRESHOLDS.warnBan3) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, '1d', { automated: true, appealable: true });
-    else if (count >= WARN_THRESHOLDS.warnBan2) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, '6h', { automated: true, appealable: true });
-    else if (count >= WARN_THRESHOLDS.warnBan) banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, '1h', { automated: true, appealable: true });
-    return { count, recent, ban: banResult };
+    
+    // Graduated auto-mod responses
+    if (count === WARN_THRESHOLDS.warnMute) {
+      const muteResult = muteUser(username, `Auto-mute: ${count} warnings in 24h`, WARN_THRESHOLDS.muteDuration);
+      if (muteResult) actions.push({ type: 'mute', duration: WARN_THRESHOLDS.muteDuration, reason: `Auto-mute at ${count} warnings` });
+    }
+    if (count === WARN_THRESHOLDS.warnFreeze) {
+      const freezeResult = freezeUser(username, `Auto-freeze: ${count} warnings in 24h`);
+      if (freezeResult) actions.push({ type: 'freeze', duration: WARN_THRESHOLDS.freezeDuration, reason: `Auto-freeze at ${count} warnings` });
+    }
+    if (count === WARN_THRESHOLDS.warnSlowMode) {
+      setSlowMode(username, WARN_THRESHOLDS.slowModeSeconds, current()?.username || 'system');
+      actions.push({ type: 'slowmode', seconds: WARN_THRESHOLDS.slowModeSeconds, reason: `Auto-slowmode at ${count} warnings` });
+    }
+    if (count >= WARN_THRESHOLDS.warnBan) {
+      const durationKey = WARN_THRESHOLDS.banDurations[count] || '1h';
+      banResult = banUser(username, `Auto-ban: ${count} warnings in 24h`, durationKey, { automated: true, appealable: true });
+      actions.push({ type: 'ban', duration: durationKey, reason: `Auto-ban at ${count} warnings` });
+    }
+    
+    return { count, recent, actions, ban: banResult };
   }
 
   function clearWarnings(username) {
@@ -710,7 +844,7 @@ window.Auth = (function () {
     initLockChannel();
 
     // Sync authoritative data from SQL server (localStorage fallback if offline)
-    await Promise.allSettled([syncUsersFromServer(), syncBansFromServer()]);
+    await syncAllFromServer();
 
     const tabs = document.querySelectorAll('.auth-tab');
     const tabsWrap = document.querySelector('.auth-tabs');
@@ -913,5 +1047,7 @@ window.Auth = (function () {
     getWarnings, warnUser, clearWarnings, getWarningInfo, saveWarnings, reportSuspiciousAction, WARN_THRESHOLDS,
     getWhitelist, isWhitelisted, getSlowMode, getSlowModeFor, canSendAtSlowMode, markMessageSent,
     checkIpBanAsync, isSessionInvalidated, strictBanGate,
+    syncAllFromServer, syncUsersFromServer, syncBansFromServer, syncMutesFromServer, syncFrozenFromServer, syncSlowModeFromServer, syncWarningsFromServer,
+    freezeUser, unfreezeUser, setSlowMode, clearSlowMode,
   };
 })();

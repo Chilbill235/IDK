@@ -54,10 +54,10 @@ async function createUser({ username, displayName, email, password, avatar, colo
   if (isDbAvailable()) {
     try {
       const rows = await getSql()`SELECT COUNT(*)::int AS c FROM users`;
-      if (!rows[0] || rows[0].c === 0) role = 'moderator';
+      if (!rows[0] || rows[0].c === 0) role = 'owner';
     } catch (e) {}
   } else {
-    if (memoryStore.users.size === 0) role = 'moderator';
+    if (memoryStore.users.size === 0) role = 'owner';
   }
   const user = {
     username: username.toLowerCase(),
@@ -601,6 +601,52 @@ async function clearSlowMode(username) {
   }
 }
 
+async function getAllFrozenUsers() {
+  if (isDbAvailable()) {
+    try {
+      const rows = await getSql`SELECT * FROM frozen_users`;
+      return rows;
+    } catch (e) {
+      console.error('[db] getAllFrozenUsers failed:', e.message);
+    }
+  }
+  return Array.from(memoryStore.frozenUsers.values());
+}
+
+async function getAllSlowMode() {
+  if (isDbAvailable()) {
+    try {
+      const rows = await getSql`SELECT * FROM slow_mode`;
+      return rows;
+    } catch (e) {
+      console.error('[db] getAllSlowMode failed:', e.message);
+    }
+  }
+  return Array.from(memoryStore.slowMode.values());
+}
+
+async function getAllMutes() {
+  // Mutes are stored as warnings with [MUTE] prefix in the warnings table
+  if (isDbAvailable()) {
+    try {
+      const rows = await getSql`SELECT * FROM warnings WHERE reason LIKE '[MUTE]%'`;
+      return rows;
+    } catch (e) {
+      console.error('[db] getAllMutes failed:', e.message);
+    }
+  }
+  // Fallback: filter memoryStore.warnings for [MUTE] prefix
+  const mutes = [];
+  for (const [key, warns] of memoryStore.warnings) {
+    for (const w of warns) {
+      if (w.reason && w.reason.startsWith('[MUTE]')) {
+        mutes.push({ ...w, username: key });
+      }
+    }
+  }
+  return mutes;
+}
+
 // ==================== CHAT MESSAGES ====================
 async function saveChatMessage({ messageId, fromUsername, toUsername, messageType, text, data, sentAt }) {
   const msg = {
@@ -953,6 +999,9 @@ module.exports = {
   setSlowMode,
   getSlowMode,
   clearSlowMode,
+  getAllSlowMode,
+  getAllFrozenUsers,
+  getAllMutes,
   // Chat
   saveChatMessage,
   getChatMessages,

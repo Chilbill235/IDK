@@ -431,6 +431,51 @@ app.get('/__sb__/auth/mutes', async (req, res) => {
   }
 });
 
+app.get('/__sb__/auth/mutes/all', async (req, res) => {
+  try {
+    const mutes = await db.getAllMutes();
+    // Convert array to object keyed by username for consistency with localStorage format
+    const mutesObj = {};
+    mutes.forEach(m => {
+      const key = m.username || m.username?.toLowerCase();
+      if (key) mutesObj[key] = m;
+    });
+    res.json({ mutes: mutesObj });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load all mutes' });
+  }
+});
+
+app.get('/__sb__/auth/frozen/all', async (req, res) => {
+  try {
+    const frozen = await db.getAllFrozenUsers();
+    // Convert array to object keyed by username for consistency with localStorage format
+    const frozenObj = {};
+    frozen.forEach(f => {
+      const key = f.username || f.username?.toLowerCase();
+      if (key) frozenObj[key] = f;
+    });
+    res.json({ frozen: frozenObj });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load frozen users' });
+  }
+});
+
+app.get('/__sb__/auth/slowmode/all', async (req, res) => {
+  try {
+    const slowmode = await db.getAllSlowMode();
+    // Convert array to object keyed by username for consistency with localStorage format
+    const slowObj = {};
+    slowmode.forEach(s => {
+      const key = s.username || s.username?.toLowerCase();
+      if (key) slowObj[key] = s;
+    });
+    res.json({ slowmode: slowObj });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load slowmode' });
+  }
+});
+
 app.post('/__sb__/auth/warn', express.json(), async (req, res) => {
   const { username, reason, warnedBy, automated } = req.body || {};
   if (!username) return res.status(400).json({ error: 'Username required' });
@@ -486,6 +531,35 @@ app.get('/__sb__/auth/frozen/:username', async (req, res) => {
     res.json({ frozen: frozen || null });
   } catch (e) {
     res.status(500).json({ error: 'Failed to load freeze status' });
+  }
+});
+
+app.post('/__sb__/auth/slowmode', express.json(), async (req, res) => {
+  const { username, seconds, setBy } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const me = setBy || 'system';
+  if (username.toLowerCase() === me.toLowerCase()) return res.status(403).json({ error: 'Cannot slowmode yourself' });
+  try {
+    await db.setSlowMode({ username, seconds: seconds || 0, setBy: me });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Slowmode failed' });
+  }
+});
+
+app.post('/__sb__/auth/slowmode/clear', express.json(), async (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  await db.clearSlowMode(username);
+  res.json({ ok: true });
+});
+
+app.get('/__sb__/auth/slowmode/:username', async (req, res) => {
+  try {
+    const slow = await db.getSlowMode(req.params.username);
+    res.json({ slow: slow || null });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load slowmode' });
   }
 });
 

@@ -1314,6 +1314,10 @@ function openModPanel() {
       const ok = await sbConfirm({ icon:'🧊', title:'Unfreeze all users?', message:'Every frozen account will be restored.', confirmText:'Unfreeze all', confirmClass:'primary' });
       if (!ok) return;
       const frozen = mpGetFrozen(); const count = Object.keys(frozen).length;
+      // Also unfreeze on server
+      Object.keys(frozen).forEach(u => {
+        try { if (window.Auth && Auth.unfreezeUser) Auth.unfreezeUser(u); } catch (e) {}
+      });
       mpSetFrozen({});
       Object.keys(frozen).forEach(u => { try { window.RT?.emit?.('unfreeze', { username: u }); } catch (e) {} });
       mpToast({ title:'Purged', msg:`${count} unfrozen`, type:'success' });
@@ -1393,6 +1397,10 @@ function openModPanel() {
       if (!count) return mpToast({ title:'No rate limits', msg:'Nothing to clear', type:'warn' });
       const ok = await sbConfirm({ icon:'🐢', title:`Clear ${count} rate limit${count===1?'':'s'}?`, message:'All users will be able to send without delay.', confirmText:'Clear all', confirmClass:'primary' });
       if (!ok) return;
+      // Also clear on server
+      Object.keys(slow).forEach(u => {
+        try { if (window.Auth && Auth.clearSlowMode) Auth.clearSlowMode(u); } catch (e) {}
+      });
       mpWrite('sb26_slowmode', {});
       mpLogAction('clear-rate-limits', '(all)', {});
       mpToast({ title:'Cleared', msg:`${count} removed`, type:'success' });
@@ -1413,6 +1421,10 @@ function openModPanel() {
       if (!count) return mpToast({ title:'No frozen users', msg:'Nothing to unfreeze', type:'warn' });
       const ok = await sbConfirm({ icon:'☀', title:`Unfreeze ${count} user${count===1?'':'s'}?`, message:'Everyone will get access back.', confirmText:'Unfreeze all', confirmClass:'primary' });
       if (!ok) return;
+      // Also unfreeze on server
+      Object.keys(frozen).forEach(u => {
+        try { if (window.Auth && Auth.unfreezeUser) Auth.unfreezeUser(u); } catch (e) {}
+      });
       mpSetFrozen({});
       Object.keys(frozen).forEach(u => { try { window.RT?.emit?.('unfreeze', { username: u }); } catch (e) {} });
       mpLogAction('mass-unfreeze', '(all)', {});

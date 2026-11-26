@@ -404,14 +404,19 @@ if (!window.__sb_mod_dialogs_v83) {
         <div class="mod-dialog-foot"><button class="btn" data-act="cancel" type="button">Cancel</button><button class="btn" data-act="confirm" type="button" style="background:var(--purple);color:#fff;border-color:var(--purple);font-weight:800">${already ? 'Unfreeze' : 'Freeze'}</button></div>
       </div>`, { onBack });
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
-      const map = window.mpGetFrozen();
       if (already) {
+        // Use Auth.unfreezeUser for server sync
+        try { if (window.Auth && Auth.unfreezeUser) Auth.unfreezeUser(username); } catch (e) {}
+        const map = window.mpGetFrozen();
         delete map[username]; window.mpSetFrozen(map);
         mpLogAction('unfreeze', username, { reason: 'Unfrozen by moderator' });
         window.RT?.emit?.('unfreeze', { username });
         mpToast({ title:'Unfrozen', msg:'@'+username, type:'success' });
       } else {
         const reason = (overlay.querySelector('#freezeReasonInput')?.value || '').trim() || 'Under investigation';
+        // Use Auth.freezeUser for server sync
+        try { if (window.Auth && Auth.freezeUser) Auth.freezeUser(username, reason); } catch (e) {}
+        const map = window.mpGetFrozen();
         map[username] = { reason, at: Date.now(), atLocal: new Date().toLocaleString(), by: ME.username };
         window.mpSetFrozen(map);
         mpLogAction('freeze', username, { reason });
@@ -544,7 +549,10 @@ if (!window.__sb_mod_dialogs_v83) {
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
       const reason = (overlay.querySelector('#escalateReasonInput').value || '').trim() || 'Repeated rule violations';
       try { Auth.warnUser(username, reason, { automated: false }); } catch (e) {}
-      if (current.action === 'slow') { const slow = window.mpGetSlowMode(); slow[username] = { seconds: 30, since: Date.now(), by: ME.username }; window.mpWrite('sb26_slowmode', slow); }
+      if (current.action === 'slow') { 
+        try { if (window.Auth && Auth.setSlowMode) Auth.setSlowMode(username, 30, ME.username); } catch (e) {}
+        const slow = window.mpGetSlowMode(); slow[username] = { seconds: 30, since: Date.now(), by: ME.username }; window.mpWrite('sb26_slowmode', slow); 
+      }
       else if (current.action === 'mute') { try { Auth.muteUser(username, reason, '1h'); } catch (e) {} }
       else if (current.action === 'ban') { try { Auth.banUser(username, reason, '1d', { automated: false }); } catch (e) {} }
       mpLogAction('escalate-' + current.action, username, { reason });
@@ -582,10 +590,20 @@ if (!window.__sb_mod_dialogs_v83) {
     overlay.querySelector('[data-act="confirm"]').onclick = () => {
       const custom = parseInt(overlay.querySelector('#mpRateCustom').value, 10) || 0;
       const sec = Math.max(0, Math.min(3600, custom));
-      const slow = window.mpGetSlowMode();
-      if (sec === 0) { delete slow[username]; mpToast({ title:'Slow mode off', msg:'@'+username, type:'success' }); }
-      else { slow[username] = { seconds: sec, since: Date.now(), by: ME.username }; mpToast({ title:'Slow mode set', msg:`@${username} · ${sec}s`, type:'success' }); }
-      window.mpWrite('sb26_slowmode', slow);
+      // Use Auth.setSlowMode/clearSlowMode for server sync
+      if (sec === 0) {
+        try { if (window.Auth && Auth.clearSlowMode) Auth.clearSlowMode(username); } catch (e) {}
+        const slow = window.mpGetSlowMode();
+        delete slow[username];
+        window.mpWrite('sb26_slowmode', slow);
+        mpToast({ title:'Slow mode off', msg:'@'+username, type:'success' });
+      } else {
+        try { if (window.Auth && Auth.setSlowMode) Auth.setSlowMode(username, sec, ME.username); } catch (e) {}
+        const slow = window.mpGetSlowMode();
+        slow[username] = { seconds: sec, since: Date.now(), by: ME.username };
+        window.mpWrite('sb26_slowmode', slow);
+        mpToast({ title:'Slow mode set', msg:`@${username} · ${sec}s`, type:'success' });
+      }
       mpLogAction('rate-limit', username, { reason: sec === 0 ? 'Disabled' : sec + 's' });
       close(); onDone?.();
     };

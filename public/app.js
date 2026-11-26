@@ -1047,6 +1047,11 @@ async function init() {
   await initServiceWorker();
   log(`SafeBeef v83 — ${(window.MODULE_REGISTRY || []).length} modules ready.`);
   toast({ title: `Welcome, ${me.display}`, msg: window.AM_PRIVILEGED ? 'Privileged access enabled' : 'Ctrl+K for command palette', type: 'success', dur: 4000 });
+
+  // Periodic sync with server (every 30 seconds)
+  setInterval(() => {
+    if (Auth.syncAllFromServer) Auth.syncAllFromServer(me.username).catch(() => {});
+  }, 30000);
 }
 
 /* ============================================================================
