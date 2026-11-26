@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="is-standalone-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<meta name="description" content="About SafeBeef — a browser-based pentest simulator for education.">
+<title>About — SafeBeef</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body class="about-page">
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<header class="about-topbar" role="banner">
+  <div class="about-topbar-left">
+    <a class="about-topbar-brand" href="index.html" aria-label="SafeBeef home">
+      <div class="logo">🐝</div>
+      <span>SafeBeef</span>
+    </a>
+    <div data-sb-clock title="Local time"></div>
+  </div>
+  <nav class="about-topbar-nav" role="navigation" aria-label="Main navigation">
+    <a href="about.html" class="active" aria-current="page">About</a>
+    <a href="help.html">Help</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="auth.html">Sign In</a>
+  </nav>
+</header>
+
+<section class="about-hero" aria-labelledby="about-title">
+  <div class="about-hero-icon">🐝</div>
+  <h1 id="about-title">About SafeBeef</h1>
+  <p>A browser-based pentest simulator built to teach security concepts through safe, hands-on experience. No real systems are harmed.</p>
+  <div class="about-hero-meta">v83 · Educational use only · © 2025</div>
+</section>
+
+<main class="about-main" id="main-content" role="main" tabindex="-1">
+  <div class="callout info">
+    <span class="callout-ico">ℹ</span>
+    <div>
+      <div class="callout-title">Educational Purpose</div>
+      SafeBeef is a controlled learning environment. Every "attack" you see is simulated locally between your own browser tabs. Nothing leaves your device, nothing targets a real person, and nothing persists across sessions unless you explicitly opt in.
+    </div>
+  </div>
+
+  <h2>What SafeBeef teaches</h2>
+  <p>Modern web apps are complex, and the most effective way to understand their vulnerabilities is to see them exploited safely. SafeBeef replicates the visual style and interaction model of real penetration-testing toolkits — the BeEF hook, iMessage-style chat, XSS payloads, session hooks — while keeping everything sandboxed.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-ico">🎣</div>
+      <h3>Hook Engine</h3>
+      <p>Simulates how a compromised browser "hooks" into a target and reports back activity — without touching any real network.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-ico">🧩</div>
+      <h3>50+ Modules</h3>
+      <p>Each module demonstrates a real-world class of attack: XSS, clickjacking, fingerprinting, social engineering, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-ico">💬</div>
+      <h3>iMessage UI</h3>
+      <p>A faithful reproduction of Apple's Messages app so social-engineering lessons feel realistic, not contrived.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-ico">🛡</div>
+      <h3>Moderation Tools</h3>
+      <p>Privileged accounts can warn, mute, freeze, and ban users — with full audit logs and appeal handling.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-ico">🔐</div>
+      <h3>Role System</h3>
+      <p>Owner, moderator, and user roles with fine-grained permissions enforced on every sensitive action.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-ico">📡</div>
+      <h3>Live Everything</h3>
+      <p>BroadcastChannel, storage events, and a reactive hub keep every tab in sync — no page reloads required.</p>
+    </div>
+  </div>
+
+  <h2>What SafeBeef will never do</h2>
+  <ul>
+    <li><strong>Transmit data.</strong> Every demo is local. Your credentials, messages, and files never leave your browser.</li>
+    <li><strong>Execute real exploits.</strong> Modules simulate behavior — they don't call real APIs or attack real infrastructure.</li>
+    <li><strong>Track you.</strong> No analytics, no third-party scripts, no telemetry.</li>
+    <li><strong>Show you someone else's data.</strong> Only your own browser tabs appear as "targets."</li>
+  </ul>
+
+  <h2>Who it's for</h2>
+  <p>SafeBeef is designed for:</p>
+  <ul>
+    <li>Students learning web security fundamentals</li>
+    <li>Instructors building interactive workshop content</li>
+    <li>Developers who want to see what "the other side" of a pentest looks like</li>
+    <li>Anyone curious about how browsers get tricked</li>
+  </ul>
+  <p>It is <strong>not</strong> a real hacking tool. It will not attack external systems, and its output cannot be used against any real network.</p>
+
+  <h2>Open the app</h2>
+  <p>Ready to explore? Sign in with a local account and you'll land in the main workspace where every module is available.</p>
+
+  <div class="page-cta">
+    <h3>🚀 Start exploring</h3>
+    <p>Pick a username and dive in. Nothing to install.</p>
+    <div class="page-cta-btns">
+      <a href="auth.html" class="page-cta-btn primary">Sign In</a>
+      <a href="help.html" class="page-cta-btn secondary">View Help</a>
+    </div>
+  </div>
+</main>
+
+<footer class="about-footer" role="contentinfo">
+  <div class="about-footer-meta">🐝 SafeBeef v83 · Educational use only · © 2025 · Not affiliated with Apple Inc.</div>
+</footer>
+
+<script src="clock.js" onerror="void 0"></script>
+</body>
+</html>

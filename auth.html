@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-motion="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<title>Sign In — SafeBeef</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body.auth-body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .auth-bg-glow {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% 15%, rgba(77, 157, 255, 0.10), transparent 60%),
+      radial-gradient(ellipse 800px 500px at 85% 85%, rgba(181, 134, 255, 0.08), transparent 60%);
+  }
+
+  /* Topbar: brand + clock on left, nav on right */
+  .auth-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    gap: 12px;
+    background: linear-gradient(180deg, rgba(3, 5, 10, 0.85), rgba(3, 5, 10, 0.65));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-2);
+  }
+  .auth-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .auth-brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    box-shadow: 0 4px 12px rgba(77, 157, 255, 0.35);
+  }
+  .auth-brand-name { display: flex; flex-direction: column; line-height: 1.15; }
+  .auth-brand-name strong {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .auth-brand-name span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-3);
+    margin-top: 1px;
+    text-transform: uppercase;
+  }
+
+  .auth-topbar-left .sb-clock {
+    padding: 6px 12px;
+    font-size: 10.5px;
+    gap: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .auth-topnav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .auth-topnav a {
+    color: var(--text-3);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .auth-topnav a:hover {
+    color: var(--accent-2);
+    background: rgba(77, 157, 255, 0.08);
+  }
+  .auth-topnav a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    background: var(--surface-3);
+  }
+
+  .auth-main {
+    flex: 1;
+    position: relative;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px 32px;
+    overflow-y: auto;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(180deg, rgba(13, 20, 32, 0.94), rgba(9, 16, 25, 0.94));
+    border: 1px solid var(--border-3);
+    border-radius: 20px;
+    padding: 28px 24px 26px;
+    box-shadow: 0 32px 96px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .auth-hero {
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .auth-hero-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    box-shadow: 0 8px 24px rgba(77, 157, 255, 0.4);
+  }
+  .auth-hero-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .auth-hero-sub {
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border-2);
+    margin-bottom: 4px;
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 14px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 14px;
+    font-weight: 700;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 0;
+  }
+  .auth-tab[aria-selected="true"] {
+    color: var(--accent-2);
+    border-bottom-color: var(--accent-2);
+  }
+  .auth-tab:not([aria-selected="true"]):hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .auth-tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    background: var(--surface-3);
+  }
+
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .auth-form.hidden {
+    display: none !important;
+  }
+  .auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .auth-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    letter-spacing: -0.2px;
+  }
+
+  .auth-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .auth-input-ico {
+    position: absolute;
+    left: 14px;
+    font-size: 16px;
+    pointer-events: none;
+    color: var(--text-3);
+    z-index: 2;
+  }
+  .auth-input {
+    width: 100%;
+    padding: 12px 14px 12px 48px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .auth-input::placeholder {
+    color: var(--text-4);
+  }
+  .auth-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-bg);
+    outline: none;
+    background: var(--surface-3);
+  }
+  .auth-input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .auth-input[aria-invalid="true"] {
+    border-color: var(--red);
+    box-shadow: 0 0 0 4px var(--red-bg);
+  }
+  button.auth-pass-toggle {
+    position: absolute;
+    right: 12px;
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--text-3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    z-index: 3;
+  }
+  button.auth-pass-toggle:hover {
+    color: var(--accent-2);
+    background: var(--surface-3);
+  }
+  button.auth-pass-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .auth-remember {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .auth-remember input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .auth-remember input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .auth-error {
+    font-size: 12px;
+    color: var(--red-2);
+    margin-bottom: 6px;
+    padding: 10px 14px;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 10px;
+  }
+  .auth-error[hidden], .auth-error:empty {
+    display: none;
+  }
+  .auth-submit {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(180deg, var(--accent-2), var(--accent));
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 6px 20px rgba(77, 157, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    margin-top: 4px;
+  }
+  .auth-submit:hover:not(:disabled) {
+    background: linear-gradient(180deg, #93c5ff, #6fb3ff);
+    box-shadow: 0 10px 28px rgba(77, 157, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+  }
+  .auth-submit:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+  .auth-submit:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .auth-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .auth-footer-note {
+    font-size: 12.5px;
+    color: var(--text-3);
+    text-align: center;
+    padding-top: 4px;
+  }
+  .auth-footer-note a {
+    color: var(--accent-2);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .auth-footer-note a:hover {
+    text-decoration: underline;
+  }
+  .auth-footer-note a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ===== Page footer ===== */
+  .auth-page-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-2);
+    font-size: 11.5px;
+    color: var(--text-4);
+    text-align: center;
+    background: rgba(9, 16, 25, 0.4);
+  }
+  .auth-page-footer .footer-links {
+    margin-bottom: 6px;
+  }
+  .auth-page-footer a {
+    color: var(--text-3);
+    text-decoration: none;
+    margin: 0 8px;
+    font-weight: 600;
+  }
+  .auth-page-footer a:hover {
+    color: var(--accent-2);
+  }
+  .auth-page-footer a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .auth-page-footer-meta {
+    margin-top: 4px;
+  }
+
+  @media (max-width: 480px) {
+    .auth-topbar {
+      padding: 10px 16px;
+    }
+    .auth-brand-mark {
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+    }
+    .auth-brand-name strong {
+      font-size: 15px;
+    }
+    .auth-brand-name span {
+      font-size: 9.5px;
+    }
+    .auth-topnav {
+      gap: 8px;
+    }
+    .auth-topnav a {
+      font-size: 11px;
+      padding: 5px 10px;
+    }
+    .auth-main {
+      padding: 16px 12px 24px;
+    }
+    .auth-card {
+      padding: 22px 18px 20px;
+      border-radius: 16px;
+    }
+    .auth-hero-icon {
+      width: 52px;
+      height: 52px;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    .auth-hero-title {
+      font-size: 22px;
+    }
+    .auth-hero-sub {
+      font-size: 14px;
+    }
+    .auth-tab {
+      padding: 12px 8px;
+      font-size: 13px;
+    }
+    .auth-input {
+      padding: 12px 14px 12px 48px;
+      font-size: 16px;
+    }
+    .auth-input-ico {
+      font-size: 16px;
+      left: 14px;
+    }
+    button.auth-pass-toggle {
+      right: 12px;
+      font-size: 16px;
+    }
+    .auth-submit {
+      padding: 14px;
+      font-size: 15px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .auth-card {
+      padding: 18px 14px 16px;
+    }
+    .auth-topbar {
+      padding: 10px 14px;
+    }
+    .auth-topnav a {
+      font-size: 10.5px;
+      padding: 4px 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+</head>
+<body class="auth-body">
+
+<div class="auth-bg-glow" aria-hidden="true"></div>
+
+<header class="auth-topbar" role="banner">
+  <div class="auth-topbar-left">
+    <a class="auth-brand" href="about.html" aria-label="SafeBeef home">
+      <div class="auth-brand-mark">SB</div>
+      <div class="auth-brand-name">
+        <strong>SafeBeef</strong>
+        <span>Pentest Simulator</span>
+      </div>
+    </a>
+    <div data-sb-clock title="Local time"></div>
+  </div>
+  <nav class="auth-topnav" role="navigation" aria-label="Secondary navigation">
+    <a href="about.html">About</a>
+    <a href="help.html">Help</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+  </nav>
+</header>
+
+<main class="auth-main" role="main" tabindex="-1">
+  <div class="auth-card" id="authCard">
+    <div class="auth-hero">
+      <div class="auth-hero-icon">SB</div>
+      <h1 class="auth-hero-title">Welcome to SafeBeef</h1>
+      <p class="auth-hero-sub">Sign in or create an account to explore the pentest simulator.</p>
+    </div>
+
+    <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+      <button class="auth-tab" data-tab="login" role="tab" aria-selected="true" aria-controls="loginForm">Sign In</button>
+      <button class="auth-tab" data-tab="register" role="tab" aria-selected="false" aria-controls="registerForm">Create Account</button>
+    </div>
+
+    <form class="auth-form" id="loginForm" autocomplete="on" novalidate>
+      <div class="auth-field">
+        <label for="loginUser">Username or Email</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-ico" aria-hidden="true">👤</span>
+          <input type="text" id="loginUser" class="auth-input" placeholder="Enter your username" autocomplete="username" required aria-required="true" aria-describedby="loginError">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label for="loginPass">Password</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-ico" aria-hidden="true">🔒</span>
+          <input type="password" id="loginPass" class="auth-input" placeholder="Enter your password" autocomplete="current-password" required aria-required="true" aria-describedby="loginError">
+          <button type="button" class="auth-pass-toggle" data-target="loginPass" aria-label="Show password">👁</button>
+        </div>
+      </div>
+      <label class="auth-remember">
+        <input type="checkbox" id="rememberMe">
+        <span>Remember me on this device</span>
+      </label>
+      <div class="auth-error" id="loginError" role="alert" aria-live="polite"></div>
+      <button type="submit" class="auth-submit" id="loginBtn">
+        <span>Sign In</span>
+      </button>
+    </form>
+
+    <form class="auth-form hidden" id="registerForm" autocomplete="on" novalidate>
+      <div class="auth-field">
+        <label for="regUser">Username</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-ico" aria-hidden="true">👤</span>
+          <input type="text" id="regUser" class="auth-input" placeholder="3-24 letters, numbers, underscores" autocomplete="username" required aria-required="true" aria-describedby="registerError">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label for="regEmail">Email</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-ico" aria-hidden="true">✉️</span>
+          <input type="email" id="regEmail" class="auth-input" placeholder="you@example.com" autocomplete="email" required aria-required="true" aria-describedby="registerError">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label for="regPass">Password</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-ico" aria-hidden="true">🔒</span>
+          <input type="password" id="regPass" class="auth-input" placeholder="At least 6 characters" autocomplete="new-password" required aria-required="true" aria-describedby="registerError">
+          <button type="button" class="auth-pass-toggle" data-target="regPass" aria-label="Show password">👁</button>
+        </div>
+      </div>
+      <div class="auth-error" id="registerError" role="alert" aria-live="polite"></div>
+      <button type="submit" class="auth-submit" id="registerBtn">
+        <span>Create Account</span>
+      </button>
+    </form>
+
+    <div class="auth-footer-note">
+      By signing in you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.
+    </div>
+  </div>
+</main>
+
+<footer class="auth-page-footer" role="contentinfo">
+  <div class="footer-links">
+    <a href="about.html">About</a>·<a href="help.html">Help</a>·<a href="terms.html">Terms</a>·<a href="privacy.html">Privacy</a>
+  </div>
+  <div class="auth-page-footer-meta">SafeBeef v83 · Educational use only · © 2025</div>
+</footer>
+
+<script src="clock.js"></script>
+<script src="ip-ban.js"></script>
+<script src="realtime.js"></script>
+<script src="auth.js"></script>
+<script src="toast.js"></script>
+<script>
+  (function () {
+    const freeze = document.createElement('div');
+    freeze.id = 'sbAuthFreeze';
+    freeze.style.cssText = 'position:fixed;inset:0;background:#03050a;z-index:2147483647;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-family:system-ui';
+    freeze.innerHTML = `
+      <div style="width:48px;height:48px;border-radius:50%;border:4px solid rgba(77,157,255,.15);border-top-color:#4d9dff;animation:sbAuthSpin 1s linear infinite"></div>
+      <div style="color:#7d90a8;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800">Verifying access…</div>
+      <style>@keyframes sbAuthSpin{to{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(freeze);
+
+    (async function() {
+      try {
+        if (window.IPBan) {
+          const ipEntry = await window.IPBan.checkSelf();
+          if (ipEntry) {
+            try { sessionStorage.setItem('sb26_ip_banned_info', JSON.stringify(ipEntry)); } catch (e) {}
+            location.replace('banned.html');
+            return;
+          }
+        }
+      } catch (e) { console.warn('[auth] ban gate:', e); }
+
+      freeze.remove();
+
+      if (window.Auth && typeof Auth.initAuthPage === 'function') Auth.initAuthPage();
+
+      document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const isLogin = tab.dataset.tab === 'login';
+          document.querySelectorAll('.auth-tab').forEach(t => {
+            t.setAttribute('aria-selected', t.dataset.tab === tab.dataset.tab);
+            t.classList.toggle('on', isLogin === (t.dataset.tab === 'login'));
+          });
+          document.getElementById('loginForm')?.classList.toggle('hidden', !isLogin);
+          document.getElementById('registerForm')?.classList.toggle('hidden', isLogin);
+        });
+      });
+      document.querySelectorAll('.auth-pass-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const inp = document.getElementById(btn.dataset.target);
+          if (!inp) return;
+          const show = inp.type === 'password';
+          inp.type = show ? 'text' : 'password';
+          btn.textContent = show ? '🙈' : '👁';
+        });
+      });
+    })();
+  })();
+</script>
+</body>
+</html>

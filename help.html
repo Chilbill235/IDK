@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="is-standalone-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<title>Help — SafeBeef</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body class="help-page">
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<header class="help-topbar" role="banner">
+  <div class="help-topbar-left">
+    <a class="help-topbar-brand" href="index.html" aria-label="SafeBeef home">
+      <div class="logo">🐝</div>
+      <span>SafeBeef</span>
+    </a>
+    <div data-sb-clock title="Local time"></div>
+  </div>
+  <nav class="help-topbar-nav" role="navigation" aria-label="Main navigation">
+    <a href="about.html">About</a>
+    <a href="help.html" class="active" aria-current="page">Help</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="auth.html">Sign In</a>
+  </nav>
+</header>
+
+<section class="help-hero" aria-labelledby="help-title">
+  <div class="help-hero-icon">❓</div>
+  <h1 id="help-title">Help & FAQ</h1>
+  <p>Everything you need to know to get the most out of SafeBeef.</p>
+  <div class="help-hero-meta">Support · Tips · Troubleshooting</div>
+</section>
+
+<main class="help-main" id="main-content" role="main" tabindex="-1">
+  <div class="toc">
+    <div class="toc-title">Jump to</div>
+    <div class="toc-list">
+      <a href="#start">Getting started</a>
+      <a href="#shortcuts">Keyboard shortcuts</a>
+      <a href="#modules">Modules</a>
+      <a href="#chat">Chat & messaging</a>
+      <a href="#moderation">Moderation</a>
+      <a href="#account">Account & bans</a>
+      <a href="#trouble">Troubleshooting</a>
+    </div>
+  </div>
+
+  <h2 id="start">Getting started</h2>
+  <p>SafeBeef runs entirely in your browser. No installation is required — just open it, create a local account, and you're in.</p>
+
+  <div class="faq">
+    <details open>
+      <summary>How do I create an account?</summary>
+      <p>Open <a href="auth.html">the sign-in page</a> and pick a username. Passwords are optional in the demo environment and stored only in your browser. Nothing is transmitted.</p>
+    </details>
+    <details>
+      <summary>Do I need more than one browser tab?</summary>
+      <p>Some modules (Hook Engine, chat) work best with multiple tabs open — one tab acts as the "attacker," another as the "target." Open the app in two tabs, sign in as different users in each, and the modules will see each other.</p>
+    </details>
+    <details>
+      <summary>Where is my data stored?</summary>
+      <p>Everything is stored in <code>localStorage</code> and <code>sessionStorage</code> in your own browser. Clearing site data will reset your account, messages, and settings.</p>
+    </details>
+    <details>
+      <summary>Is anything sent to a server?</summary>
+      <p>No. SafeBeef has no backend. Multi-tab features work through <code>BroadcastChannel</code>, which is local-only. See the <a href="privacy.html">Privacy Policy</a> for details.</p>
+    </details>
+  </div>
+
+  <h2 id="shortcuts">Keyboard shortcuts</h2>
+  <div class="faq">
+    <details open>
+      <summary>Ctrl + K — Command palette</summary>
+      <p>Opens a searchable command palette. Jump to any module, user, or setting without touching the mouse.</p>
+    </details>
+    <details>
+      <summary>/ — Focus module search</summary>
+      <p>Pressing <code>/</code> on the main workspace focuses the module search box.</p>
+    </details>
+    <details>
+      <summary>Esc — Close current panel</summary>
+      <p>Closes the active chat, mod panel, settings, or command palette. Also dismisses the topmost toast notification.</p>
+    </details>
+    <details>
+      <summary>↑ / ↓ — Console history</summary>
+      <p>In the console pane, use arrow keys to cycle through your command history.</p>
+    </details>
+  </div>
+
+  <h2 id="modules">Modules</h2>
+  <div class="faq">
+    <details>
+      <summary>What is a "module"?</summary>
+      <p>Each module demonstrates one security concept — for example, "XSS Demo" shows how untrusted input can run script in another user's tab. Click any module card to run it.</p>
+    </details>
+    <details>
+      <summary>Do modules actually attack anything?</summary>
+      <p>No. Every module is simulated. They may <em>display</em> realistic-looking output (fake cookies, fake console logs), but no real network requests are made and no external system is touched.</p>
+    </details>
+    <details>
+      <summary>What does "Live Data" mean on some modules?</summary>
+      <p>Modules tagged <strong>LIVE</strong> pull real data from public demo APIs (e.g., inspirational quotes, Pokémon info) to make their output feel authentic. These are read-only GET requests to well-known public APIs — no personal data is sent.</p>
+    </details>
+    <details>
+      <summary>Why are some modules greyed out?</summary>
+      <p>Some modules require a "hooked" target. Hook a user first from the left pane, then run the module.</p>
+    </details>
+  </div>
+
+  <h2 id="chat">Chat & messaging</h2>
+  <div class="faq">
+    <details>
+      <summary>How do I start a chat?</summary>
+      <p>Click 💬 in the top bar, pick a user, and type. Conversations are local — they only exist between tabs signed in on your device.</p>
+    </details>
+    <details>
+      <summary>Why can't I send messages?</summary>
+      <p>If you're muted, frozen, or banned, the input is disabled and a banner explains the reason and remaining time. Contact a moderator or submit an appeal from the ban screen.</p>
+    </details>
+    <details>
+      <summary>Can I send files?</summary>
+      <p>Yes — images, video, audio, and "Digital Touch" are supported through the attach menu (＋ button). Files are encoded as data URLs and stay local.</p>
+    </details>
+    <details>
+      <summary>How do I report a user?</summary>
+      <p>Right-click any conversation in the Messages sidebar and choose <strong>Report user…</strong>. You can also right-click any incoming message and choose <strong>Report message…</strong> to include it in the report.</p>
+    </details>
+  </div>
+
+  <h2 id="moderation">Moderation</h2>
+  <div class="faq">
+    <details>
+      <summary>How do I become a moderator?</summary>
+      <p>Only the owner can promote users. If you're the owner, open the moderation panel → Role Management. Otherwise, ask the owner.</p>
+    </details>
+    <details>
+      <summary>What can moderators do?</summary>
+      <p>Moderators can warn, mute (temporary or permanent), freeze (read-only access), kick (force sign-out), and ban users. They can also review appeals and see an audit log.</p>
+    </details>
+    <details>
+      <summary>What's the difference between a mute, freeze, and ban?</summary>
+      <ul>
+        <li><strong>Mute</strong> — user can read but not send messages</li>
+        <li><strong>Freeze</strong> — user is locked out of all actions until unfrozen</li>
+        <li><strong>Ban</strong> — user is signed out and shown the ban screen; they cannot log in until unbanned or the ban expires</li>
+      </ul>
+    </details>
+    <details>
+      <summary>What happens when I get 3 warnings?</summary>
+      <p>Three warnings within 24 hours trigger an automatic ban. Warnings clear from the counter after 24 hours of clean behavior.</p>
+    </details>
+  </div>
+
+  <h2 id="account">Account & bans</h2>
+  <div class="faq">
+    <details>
+      <summary>I've been banned. What now?</summary>
+      <p>You'll see the ban screen with the reason, issuer, and remaining time. If appeals are enabled, submit one — a moderator will review it. Bans expire automatically when their timer runs out.</p>
+    </details>
+    <details>
+      <summary>How do I appeal a ban?</summary>
+      <p>On the ban screen, click <strong>Appeal</strong>, type a short explanation, and submit. You can only have one pending appeal at a time.</p>
+    </details>
+    <details>
+      <summary>Can I have multiple accounts?</summary>
+      <p>Technically yes (they're local), but abuse of multiple accounts to evade bans is against the <a href="terms.html">Terms</a>.</p>
+    </details>
+    <details>
+      <summary>How do I delete my account?</summary>
+      <p>SafeBeef doesn't have a delete button — because there's no server. Simply clear your browser's site data for this origin. All accounts, messages, and settings will be gone.</p>
+    </details>
+  </div>
+
+  <h2 id="trouble">Troubleshooting</h2>
+  <div class="faq">
+    <details>
+      <summary>Modules aren't loading / blank page</summary>
+      <p>Try a hard refresh (<code>Ctrl+Shift+R</code> or <code>Cmd+Shift+R</code>). If that fails, clear site data and sign in again.</p>
+    </details>
+    <details>
+      <summary>Chat isn't updating between tabs</summary>
+      <p>Make sure both tabs are on the same origin (same protocol + host + port) and both signed in. BroadcastChannel only works between same-origin tabs.</p>
+    </details>
+    <details>
+      <summary>Toasts are missing or truncated</summary>
+      <p>Check that <code>toast.js</code> and <code>toast.css</code> (or the toast rules in <code>styles.css</code>) are loaded. The toast system falls back to <code>console.info</code> if the module is missing.</p>
+    </details>
+    <details>
+      <summary>I lost my role / account vanished</summary>
+      <p>Roles and accounts are stored in <code>localStorage</code>. If you cleared site data or opened a private window, they're gone. The owner account can usually be recreated by signing up with the same username on a fresh session.</p>
+    </details>
+    <details>
+      <summary>Colors look wrong / theme is stuck</summary>
+      <p>Theme is stored in <code>sb26_settings</code>. Open Settings (⚙) → Appearance → Theme to reset. If the page can't load styles at all, ensure <code>styles.css</code> is served correctly.</p>
+    </details>
+  </div>
+
+  <div class="callout warn">
+    <span class="callout-ico">⚠</span>
+    <div>
+      <div class="callout-title">Still stuck?</div>
+      SafeBeef is an educational demo, not a production service. There is no official support channel. If something is broken, clear your site data and start fresh — that resolves 90% of issues.
+    </div>
+  </div>
+
+  <div class="page-cta">
+    <h3>Ready to dive in?</h3>
+    <p>Sign in and start exploring modules.</p>
+    <div class="page-cta-btns">
+      <a href="auth.html" class="page-cta-btn primary">Sign In</a>
+      <a href="about.html" class="page-cta-btn secondary">About SafeBeef</a>
+    </div>
+  </div>
+</main>
+
+<footer class="help-footer">
+  <div class="help-footer-meta">🐝 SafeBeef v83 · Educational use only · © 2025</div>
+</footer>
+
+<script src="clock.js" onerror="void 0"></script>
+</body>
+</html>

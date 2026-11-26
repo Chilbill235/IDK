@@ -1,0 +1,11 @@
+# Vercel ignore file
+node_modules/.cache
+*.log
+server.out.log
+server.err.log
+.git
+.gitignore
+README.md
+.vercel
+*.sh
+.DS_Store

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="is-standalone-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<title>Privacy Policy — SafeBeef</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body class="legal-page">
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<header class="legal-topbar" role="banner">
+  <div class="legal-topbar-left">
+    <a class="legal-topbar-brand" href="index.html" aria-label="SafeBeef home">
+      <div class="logo">🐝</div>
+      <span>SafeBeef</span>
+    </a>
+    <div data-sb-clock title="Local time"></div>
+  </div>
+  <nav class="legal-topbar-nav" role="navigation" aria-label="Main navigation">
+    <a href="about.html">About</a>
+    <a href="help.html">Help</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html" class="active" aria-current="page">Privacy</a>
+    <a href="auth.html">Sign In</a>
+  </nav>
+</header>
+
+<section class="legal-hero" aria-labelledby="privacy-title">
+  <div class="legal-hero-icon">🔒</div>
+  <h1 id="privacy-title">Privacy Policy</h1>
+  <p>SafeBeef collects nothing, sends nothing, and stores everything in your own browser.</p>
+  <div class="legal-hero-meta">Last updated · November 2025</div>
+</section>
+
+<main class="legal-main" id="main-content" role="main" tabindex="-1">
+  <div class="legal-updated">
+    <span>📅</span>
+    Effective: <strong>November 2025</strong> · Version <strong>76</strong>
+  </div>
+
+  <div class="legal-body">
+    <div class="callout success">
+      <span class="callout-ico">✓</span>
+      <div>
+        <div class="callout-title">The Short Version</div>
+        No servers. No analytics. No tracking. No third parties. Everything you do stays in your browser's local storage. Clearing site data wipes it all permanently.
+      </div>
+    </div>
+
+    <h2 id="overview">1. Overview</h2>
+    <p>SafeBeef is a fully client-side web application. It has no backend server, no database, and no user accounts on any remote system. All data you create — usernames, messages, settings, ban records, moderation actions — is stored exclusively in your own browser using <code>localStorage</code> and <code>sessionStorage</code>.</p>
+    <p>This means: <strong>we</strong> (the developers) <strong>have no access to your data</strong>. We never see it, cannot see it, and cannot transmit or sell it.</p>
+
+    <h2 id="what-we-store">2. What Is Stored Locally</h2>
+    <p>The following information is stored in your browser:</p>
+    <ul>
+      <li><strong>Account information</strong> — username, display name, avatar color, and role (stored under <code>sb26_users</code>)</li>
+      <li><strong>Session state</strong> — your current signed-in user (stored in <code>sessionStorage</code> under <code>sb26_session</code>)</li>
+      <li><strong>Messages and chat history</strong> — stored under <code>sb26_chat_*</code> keys</li>
+      <li><strong>Moderation data</strong> — bans, mutes, warnings, appeals, and audit logs (all local)</li>
+      <li><strong>Settings</strong> — theme, accent color, motion preferences, and toggles (stored under <code>sb26_settings</code>)</li>
+      <li><strong>Module activity</strong> — recent modules, session stats, hook data</li>
+    </ul>
+    <p>None of this is transmitted. None of this leaves your device.</p>
+
+    <h2 id="cookies">3. Cookies</h2>
+    <p>SafeBeef does <strong>not</strong> set HTTP cookies for tracking. The IP/hardware-ban system sets a single benign persistence cookie (<code>sb26_ip_token</code>) that only contains a random hardware fingerprint ID used to detect ban evasion on this device. It never leaves your browser and is not shared with anyone.</p>
+
+    <h2 id="third-party">4. Third-Party Services</h2>
+    <p>Some "Live Data" modules make <strong>read-only GET requests</strong> to public demo APIs to fetch content that makes the module feel real (for example, inspirational quotes, weather, or Pokémon data). These requests:</p>
+    <ul>
+      <li>Do not include any personal information</li>
+      <li>Do not include identifiers tied to your account</li>
+      <li>Are visible to the API provider as a normal page visit (same as opening that API in a browser tab)</li>
+    </ul>
+    <p>We do not integrate analytics, advertising, trackers, or third-party identity services. If your browser or network blocks such requests, modules will simply fall back to offline sample data.</p>
+
+    <h2 id="analytics">5. Analytics & Tracking</h2>
+    <p>None. SafeBeef has zero analytics, zero tracking pixels, and zero telemetry. We do not know how many people use SafeBeef, what modules they run, or what operating system they use.</p>
+
+    <h2 id="security">6. Data Security</h2>
+    <p>Because data is stored locally in your browser, its security is the security of your device. Anyone with access to your device and browser profile can access your local SafeBeef data. Protect your device with a strong password and keep your browser profile private.</p>
+    <p>Nothing is encrypted in transit — because nothing is transmitted. If you wish to remove all SafeBeef data, simply clear site data for this origin in your browser settings.</p>
+
+    <h2 id="retention">7. Data Retention & Deletion</h2>
+    <p>Local data persists until one of the following occurs:</p>
+    <ul>
+      <li>You clear your browser's site data</li>
+      <li>You use a "Clear data" option in your browser settings</li>
+      <li>You open SafeBeef in a private/incognito window (data is discarded when the window closes)</li>
+    </ul>
+    <p>Because there is no server, there is no "account deletion" process. Removing local data <em>is</em> account deletion — permanently and completely.</p>
+
+    <h2 id="children">8. Children's Privacy</h2>
+    <p>SafeBeef does not knowingly collect any information from anyone — because it cannot. It is a client-side application with no data collection of any kind. The Service is intended for users aged 13 and older; if you are younger, use it only with parental permission.</p>
+
+    <h2 id="gdpr">9. GDPR / CCPA Compliance</h2>
+    <p>Because we do not collect, process, or store any personal data on any server, most GDPR and CCPA obligations (right to access, right to delete, right to portability) are satisfied trivially: you have direct access to all data at any time via your browser's developer tools, and you can delete all of it by clearing site data.</p>
+    <p>If you have questions, contact the project maintainers through the original distribution channel.</p>
+
+    <h2 id="changes">10. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy to reflect changes in the Service. The "Last updated" date at the top of the page indicates when changes were made. Continued use of the Service after changes constitutes acceptance of the new policy.</p>
+
+    <h2 id="contact">11. Contact</h2>
+    <p>Questions or concerns about privacy? Because SafeBeef is a community project without an official support team, please contact the original distributor through their published channel.</p>
+
+    <div class="callout info" style="margin-top:32px">
+      <span class="callout-ico">ℹ</span>
+      <div>
+        <div class="callout-title">Educational Demo</div>
+        SafeBeef is a simulated penetration-testing training environment. It is not a real service, has no backend, and collects no user data. Treat it as an interactive educational artifact.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-cta">
+    <h3>Need more detail?</h3>
+    <p>Read the Terms of Service or check out Help.</p>
+    <div class="page-cta-btns">
+      <a href="terms.html" class="page-cta-btn primary">Terms of Service</a>
+      <a href="help.html" class="page-cta-btn secondary">Help</a>
+    </div>
+  </div>
+</main>
+
+<footer class="legal-footer" role="contentinfo">
+  <div class="legal-footer-meta">🐝 SafeBeef v83 · Educational use only · © 2025</div>
+</footer>
+
+<script src="clock.js" onerror="void 0"></script>
+</body>
+</html>

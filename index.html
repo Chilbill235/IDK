@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en" data-motion="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<meta name="description" content="SafeBeef — Browser-based pentest simulator for education.">
+<title>SafeBeef — Pentest Simulator</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* =========================================================================
+     v83.2 — GLOBAL POLISH: buttons, dropdown, typography
+     ========================================================================= */
+
+  /* ---------- Skip link for keyboard users ---------- */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    z-index: 999999;
+  }
+  .skip-link:focus {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: auto;
+    height: auto;
+    padding: 8px 14px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 2px solid #fff;
+    z-index: 999999;
+    text-decoration: none;
+  }
+
+  /* ---------- Button system ---------- */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: -.1px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s, color .15s, transform .1s, box-shadow .15s;
+    user-select: none;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--surface-3);
+    border-color: var(--border-3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.28);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0) scale(.98);
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 4px var(--accent-border);
+  }
+  .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  .btn.sm { padding: 7px 14px; font-size: 11.5px; border-radius: 8px; }
+  .btn.lg { padding: 13px 26px; font-size: 13.5px; border-radius: 11px; }
+  .btn.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-2);
+  }
+  .btn.ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--border-2);
+    color: var(--text);
+    box-shadow: none;
+  }
+  .btn.primary {
+    background: linear-gradient(180deg, var(--accent-2), var(--accent));
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(77,157,255,.35), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .btn.primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #93c5ff, #5fa5ff);
+    box-shadow: 0 6px 20px rgba(77,157,255,.55), inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .btn.primary:active:not(:disabled) {
+    background: linear-gradient(180deg, var(--accent), #3c8be2);
+  }
+  .btn.danger {
+    background: linear-gradient(180deg, var(--red-2), var(--red));
+    border-color: var(--red);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255,90,110,.35), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .btn.danger:hover:not(:disabled) {
+    background: linear-gradient(180deg, #ff99a8, #ff5a6e);
+    box-shadow: 0 6px 20px rgba(255,90,110,.55), inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .btn.danger:active:not(:disabled) {
+    background: linear-gradient(180deg, var(--red), #c93246);
+  }
+  .btn.success {
+    background: linear-gradient(180deg, var(--green-2), var(--green));
+    border-color: var(--green);
+    color: #001a0a;
+    box-shadow: 0 2px 8px rgba(52,217,127,.35), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .btn.success:hover:not(:disabled) {
+    background: linear-gradient(180deg, #86f2ba, #4be594);
+    box-shadow: 0 6px 20px rgba(52,217,127,.5);
+  }
+  .btn.loading { pointer-events: none; opacity: .85; }
+  .btn.loading::before {
+    content: '';
+    width: 12px; height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: sbBtnSpin .7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes sbBtnSpin { to { transform: rotate(360deg); } }
+
+  /* ---------- Top menu dropdown ---------- */
+  .top-menu {
+    min-width: 260px;
+    padding: 6px;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.03) inset;
+    overflow: hidden;
+  }
+  .menu-section-label {
+    font-size: 9.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: var(--text-4);
+    padding: 10px 12px 4px;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .menu-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-2), transparent);
+    margin-left: 4px;
+  }
+  .menu-section-label:first-child { padding-top: 4px; }
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    text-align: left;
+    width: 100%;
+    transition: background .12s, color .12s, transform .12s;
+    font-family: inherit;
+    cursor: pointer;
+    line-height: 1.25;
+    text-decoration: none;
+  }
+  .dropdown-item > span:first-child {
+    font-size: 15px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .dropdown-item:hover {
+    background: var(--surface-3);
+    color: var(--text);
+    transform: translateX(1px);
+  }
+  .dropdown-item.danger { color: var(--red-2); }
+  .dropdown-item.danger:hover { background: var(--red-bg); color: var(--red-2); }
+  .dropdown-item .kbd {
+    margin-left: auto;
+    font-size: 9.5px;
+    padding: 2px 7px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-3);
+    border-radius: 5px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-2), transparent);
+    margin: 5px 4px;
+  }
+
+  /* ---------- Better kbd badge ---------- */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-3);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-3);
+    font-weight: 800;
+    letter-spacing: .2px;
+  }
+
+  /* =========================================================================
+     v83.2 — PROFILE PANEL (scoped)
+     ========================================================================= */
+  .mod-dialog-back {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: var(--surface-2); border: 1px solid var(--border-2);
+    color: var(--text-2); font-size: 20px; line-height: 1;
+    display: grid; place-items: center; flex-shrink: 0;
+    cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .mod-dialog-back:hover {
+    background: var(--surface-3); color: var(--text); border-color: var(--border-3);
+    transform: translateX(-1px);
+  }
+  .mod-dialog-overlay.mod-dialog-stack {
+    background: rgba(0,0,0,.55) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  /* ---------- Profile shell ---------- */
+  .profile-panel-v2 .settings-shell { max-width: 780px; }
+  .pv2-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--surface-2), transparent);
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+  .pv2-tabs::-webkit-scrollbar { display: none; }
+  .pv2-tab {
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .pv2-tab:hover { background: var(--surface-3); color: var(--text-2); }
+  .pv2-tab.on {
+    background: var(--accent-bg);
+    color: var(--accent-2);
+    border-color: var(--accent-border);
+    box-shadow: 0 2px 10px rgba(77,157,255,.1);
+  }
+  .pv2-tab-ico { font-size: 14px; line-height: 1; }
+
+  /* ---------- Tab body ---------- */
+  .pv2-body {
+    padding: 22px 24px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .pv2-group { display: flex; flex-direction: column; gap: 9px; }
+  .pv2-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    font-weight: 800;
+    color: var(--text-3);
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pv2-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    box-sizing: border-box;
+    line-height: 1.4;
+  }
+  .pv2-input:hover:not(:focus) { border-color: var(--border-3); }
+  .pv2-input:focus {
+    border-color: var(--accent);
+    background: var(--bg-1);
+    box-shadow: 0 0 0 3px rgba(77,157,255,.15);
+  }
+  .pv2-textarea { resize: vertical; min-height: 78px; line-height: 1.55; }
+  .pv2-hint {
+    font-size: 10.5px;
+    color: var(--text-3);
+    padding: 0 2px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pv2-hint-count { font-family: var(--mono); font-weight: 700; color: var(--text-4); flex-shrink: 0; }
+  .pv2-hint-count.limit { color: var(--amber-2); }
+
+  /* ---------- Row / toggle ---------- */
+  .pv2-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 11px;
+    transition: border-color .15s, background .15s;
+  }
+  .pv2-row:hover { border-color: var(--border-3); }
+  .pv2-row-body { flex: 1; min-width: 0; }
+  .pv2-row-title { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .pv2-row-desc { font-size: 11px; color: var(--text-3); margin-top: 3px; line-height: 1.5; }
+  .pv2-toggle {
+    width: 44px; height: 26px;
+    border-radius: 13px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-3);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .2s, border-color .2s;
+    padding: 0;
+  }
+  .pv2-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .22s cubic-bezier(.4,1.3,.6,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  .pv2-toggle.on { background: var(--accent); border-color: var(--accent); }
+  .pv2-toggle.on::after { transform: translateX(18px); }
+  .pv2-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+
+  /* ---------- Segmented control ---------- */
+  .pv2-seg {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pv2-seg::-webkit-scrollbar { display: none; }
+  .pv2-seg button {
+    padding: 8px 13px;
+    border-radius: 7px;
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, color .15s, box-shadow .15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.2;
+  }
+  .pv2-seg button:hover:not(.on) { color: var(--text-2); background: var(--surface-2); }
+  .pv2-seg button.on {
+    background: var(--accent-bg);
+    color: var(--accent-2);
+    box-shadow: 0 0 0 1px var(--accent-border), 0 2px 8px rgba(77,157,255,.15);
+  }
+
+  /* ---------- Color picker ---------- */
+  .pv2-color-current {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 9px;
+    margin-bottom: 4px;
+  }
+  .pv2-color-current-chip {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--border-3);
+    flex-shrink: 0;
+  }
+  .pv2-color-current-label {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 700;
+  }
+  .pv2-color-current-hex {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-2);
+    font-weight: 700;
+    margin-left: auto;
+    letter-spacing: .3px;
+  }
+  .pv2-colors {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 6px 4px;
+    align-items: center;
+  }
+  .pv2-color {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .pv2-color:hover { transform: scale(1.12); }
+  .pv2-color.on {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px currentColor;
+    transform: scale(1.08);
+  }
+  .pv2-color.on::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  }
+
+  /* ---------- Action buttons (in-tab) ---------- */
+  .pv2-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .pv2-action {
+    padding: 9px 14px;
+    border-radius: 9px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, border-color .15s, color .15s, transform .12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+  }
+  .pv2-action:hover {
+    background: var(--surface-3);
+    border-color: var(--border-3);
+    color: var(--text);
+    transform: translateY(-1px);
+  }
+  .pv2-action:active { transform: translateY(0) scale(.98); }
+  .pv2-action.danger {
+    background: var(--red-bg);
+    color: var(--red-2);
+    border-color: var(--red-border);
+  }
+  .pv2-action.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* ---------- Hero area ---------- */
+  .pv2-hero {
+    padding: 30px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .pv2-hero-pattern {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: background .25s;
+  }
+  .pv2-avatar {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    font-weight: 900;
+    color: #fff;
+    border: 3px solid var(--surface-2);
+    transition: border-radius .2s, box-shadow .2s, transform .15s;
+    cursor: pointer;
+    user-select: none;
+    text-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+  .pv2-avatar:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 3px var(--accent), 0 12px 40px rgba(77,157,255,.5);
+  }
+  .pv2-avatar:hover::after {
+    content: '✎';
+    position: absolute;
+    inset: auto 0 4px 0;
+    text-align: center;
+    font-size: 14px;
+    opacity: .9;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  }
+  .pv2-display {
+    position: relative;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    line-height: 1.25;
+  }
+  .pv2-username {
+    position: relative;
+    font-size: 12px;
+    color: var(--text-3);
+    font-family: var(--mono);
+    line-height: 1.3;
+  }
+  .pv2-pronouns {
+    position: relative;
+    font-size: 11px;
+    color: var(--text-3);
+    font-style: italic;
+    min-height: 14px;
+    line-height: 1.4;
+  }
+  .pv2-status-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 22px;
+  }
+  .pv2-bio {
+    position: relative;
+    font-size: 12.5px;
+    text-align: center;
+    max-width: 420px;
+    line-height: 1.6;
+    min-height: 20px;
+    color: var(--text-2);
+  }
+  .pv2-bio.empty { color: var(--text-3); opacity: .65; font-style: italic; }
+  .pv2-badges {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pv2-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .pv2-stat {
+    background: var(--surface-2);
+    padding: 14px 8px;
+    text-align: center;
+  }
+  .pv2-stat-val {
+    font-size: 18px;
+    font-weight: 900;
+    font-family: var(--mono);
+    line-height: 1;
+  }
+  .pv2-stat-label {
+    font-size: 9.5px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 800;
+    margin-top: 5px;
+  }
+
+  /* ---------- Dirty indicator on save button ---------- */
+  .btn.primary.dirty::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    margin-left: 4px;
+    box-shadow: 0 0 8px #fff;
+    animation: sbDirtyPulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes sbDirtyPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .pv2-body { padding: 16px 18px 20px; gap: 16px; }
+    .pv2-tab { padding: 8px 12px; font-size: 11px; gap: 5px; }
+    .pv2-tab-ico { font-size: 13px; }
+    .pv2-hero { padding: 24px 18px 20px; }
+    .pv2-avatar { width: 84px; height: 84px; font-size: 28px; }
+    .pv2-display { font-size: 19px; }
+    .pv2-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .pv2-stat { padding: 12px 8px; }
+    .pv2-stat-val { font-size: 16px; }
+    .pv2-color { width: 28px; height: 28px; }
+    .pv2-colors { gap: 6px; }
+    .pv2-seg button { padding: 7px 11px; font-size: 11px; }
+    .pv2-tabs { padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+  <a href="#main-workspace" class="skip-link">Skip to main content</a>
+
+<header class="topbar" role="banner">
+  <div class="brand" onclick="switchMobileView('modules')">
+    <div class="logo">SB</div>
+    <div class="brand-text"><strong>SafeBeef</strong><span>v83</span></div>
+  </div>
+  <div class="topstats">
+    <div class="stat-chip" title="Hooked target" id="hookedChip"><span class="ico">🎣</span><span class="val" id="hookedBadge" style="color:var(--muted)">none</span></div>
+    <div class="stat-chip" title="Online users"><span class="ico">🌐</span><span class="val cyan" id="onlineCount">0</span></div>
+    <div data-sb-clock title="Local time"></div>
+  </div>
+  <div class="top-right">
+    <button class="icon-btn" id="btnCommand" title="Command palette (Ctrl+K)" aria-label="Search">🔍</button>
+    <button class="icon-btn" id="btnChat" title="Messages" aria-label="Messages">💬<span class="badge hidden" id="chatBadge">0</span></button>
+    <button class="icon-btn" id="btnMod" title="Moderation" aria-label="Moderation" style="display:none">🛡<span class="badge hidden" id="modBadge">0</span></button>
+    <button class="icon-btn" id="btnProfile" title="My profile" aria-label="Profile"><span class="avatar-mini" id="myAvatar">?</span></button>
+    <button class="icon-btn" id="btnMenu" title="Menu" aria-label="Menu">⚙</button>
+    <button class="mobile-menu-btn" onclick="openSheet('menuSheet')" aria-label="Menu">☰</button>
+  </div>
+
+  <div class="dropdown-menu top-menu hidden" id="topMenu">
+    <div class="menu-section-label">Account</div>
+    <button class="dropdown-item" onclick="App.openProfile()"><span>👤</span> My Profile</button>
+    <button class="dropdown-item" onclick="App.openSettings()"><span>⚙</span> Settings</button>
+    <button class="dropdown-item" onclick="App.openStats()"><span>📊</span> Stats</button>
+    <div class="menu-section-label">Tools</div>
+    <button class="dropdown-item" id="menuModItem" style="display:none" onclick="App.openModPanel()"><span>🛡</span> Moderation</button>
+    <button class="dropdown-item" onclick="App.openReportDialog()"><span>🚩</span> Report User</button>
+    <button class="dropdown-item" onclick="App.testPush()"><span>🔔</span> Test Push</button>
+    <div class="menu-section-label">Commands</div>
+    <button class="dropdown-item" onclick="App.openCommandPalette()"><span>⌘</span> Command Palette <span class="kbd">Ctrl K</span></button>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" onclick="App.logout()"><span>🚪</span> Sign Out</button>
+  </div>
+</header>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<main class="workspace" id="main-workspace" role="main" tabindex="-1">
+  <aside class="pane pane-left" id="paneLeft">
+    <div class="pane-head"><h2><span>🎣</span> Hook</h2><span class="pill" id="hookCount">0</span></div>
+    <div class="hook-panel" id="hookPanel">
+      <div class="hook-empty" id="hookEmpty"><div class="hook-empty-icon">🎯</div><p>No target hooked</p><small>Pick a user below</small></div>
+    </div>
+    <div class="hook-online-list" id="hookOnlineList"></div>
+    <div id="hookRecentAttacks" style="display:none"></div>
+    <div class="pane-resizer" data-resize="left"></div>
+  </aside>
+  <section class="pane pane-center">
+    <div class="modules-search">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="moduleSearch" placeholder="Search modules… (Ctrl+K for command palette)" autocomplete="off">
+      <span class="kbd">/</span>
+    </div>
+    <div class="recent-modules-bar" id="recentModulesBar"></div>
+    <div class="modules-wrap" id="modulesWrap"></div>
+  </section>
+  <aside class="pane pane-right" id="paneRight">
+    <div class="pane-resizer" data-resize="right"></div>
+    <div class="pane-head"><h2><span>⌨</span> Console</h2></div>
+    <div class="console-out" id="consoleOut"></div>
+    <div class="console-in"><span class="pr">❯</span><input type="text" id="consoleIn" placeholder='type "help"' autocomplete="off"><button id="consoleRun">Run</button></div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="k">Keys</div><div class="v green" id="statKeys">0</div></div>
+      <div class="stat-cell"><div class="k">Clicks</div><div class="v purple" id="statClicks">0</div></div>
+      <div class="stat-cell"><div class="k">Mods</div><div class="v cyan" id="statMods">0</div></div>
+      <div class="stat-cell"><div class="k">Stored</div><div class="v amber" id="statRecords">0</div></div>
+    </div>
+  </aside>
+</main>
+
+<div class="mobile-views">
+  <div class="mobile-view on" id="view-hook">
+    <div class="pane-head"><h2><span>🎣</span> Hook</h2><span class="pill" id="hookCountM">0</span></div>
+    <div class="hook-panel" id="hookPanelM"></div>
+    <div class="hook-online-list" id="hookOnlineListM"></div>
+  </div>
+  <div class="mobile-view" id="view-modules">
+    <div class="modules-search"><span class="search-icon">🔍</span><input type="search" id="moduleSearchM" placeholder="Search modules…" autocomplete="off"></div>
+    <div class="recent-modules-bar" id="recentModulesBarM"></div>
+    <div class="modules-wrap" id="modulesWrapMobile"></div>
+  </div>
+  <div class="mobile-view" id="view-console">
+    <div class="pane-head"><h2><span>⌨</span> Console</h2></div>
+    <div class="console-out" id="consoleOutM"></div>
+    <div class="console-in"><span class="pr">❯</span><input type="text" id="consoleInM" placeholder='type "help"'><button id="consoleRunM">Run</button></div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="k">Keys</div><div class="v green" id="statKeysM">0</div></div>
+      <div class="stat-cell"><div class="k">Clicks</div><div class="v purple" id="statClicksM">0</div></div>
+      <div class="stat-cell"><div class="k">Mods</div><div class="v cyan" id="statModsM">0</div></div>
+      <div class="stat-cell"><div class="k">Stored</div><div class="v amber" id="statRecordsM">0</div></div>
+    </div>
+  </div>
+</div>
+
+<nav class="mobile-nav">
+  <button class="mnav-btn on" data-view="hook" onclick="switchMobileView('hook')"><span class="ico">🎣</span><span>Hook</span></button>
+  <button class="mnav-btn" data-view="modules" onclick="switchMobileView('modules')"><span class="ico">🧩</span><span>Modules</span></button>
+  <button class="mnav-btn" data-view="console" onclick="switchMobileView('console')"><span class="ico">⌨</span><span>Console</span></button>
+  <button class="mnav-btn" onclick="App.openChat()"><span class="ico">💬</span><span>Chat</span></button>
+  <button class="mnav-btn" onclick="openSheet('menuSheet')"><span class="ico">⚡</span><span>More</span></button>
+</nav>
+
+<div class="sheet" id="menuSheet">
+  <div class="sheet-handle" onclick="closeSheet('menuSheet')"></div>
+  <div class="sheet-head"><h3>⚡ Tools</h3><button class="sheet-close" onclick="closeSheet('menuSheet')">×</button></div>
+  <div class="sheet-body">
+    <div class="menu-section-label">Account</div>
+    <button class="dropdown-item" onclick="App.openProfile();closeSheet('menuSheet')"><span>👤</span> My Profile</button>
+    <button class="dropdown-item" onclick="App.openSettings();closeSheet('menuSheet')"><span>⚙</span> Settings</button>
+    <button class="dropdown-item" onclick="App.openStats();closeSheet('menuSheet')"><span>📊</span> Stats</button>
+    <div class="menu-section-label">Tools</div>
+    <button class="dropdown-item" id="sheetModItem" style="display:none" onclick="App.openModPanel();closeSheet('menuSheet')"><span>🛡</span> Moderation</button>
+    <button class="dropdown-item" onclick="App.openReportDialog();closeSheet('menuSheet')"><span>🚩</span> Report User</button>
+    <button class="dropdown-item" onclick="App.openChat();closeSheet('menuSheet')"><span>💬</span> Messages</button>
+    <button class="dropdown-item" onclick="App.openCommandPalette();closeSheet('menuSheet')"><span>⌘</span> Command Palette</button>
+    <div class="menu-section-label">Info</div>
+    <a class="dropdown-item" href="about.html"><span>ℹ</span> About</a>
+    <a class="dropdown-item" href="help.html"><span>❓</span> Help</a>
+    <a class="dropdown-item" href="terms.html"><span>📜</span> Terms</a>
+    <a class="dropdown-item" href="privacy.html"><span>🔒</span> Privacy</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" onclick="App.logout()"><span>🚪</span> Sign Out</button>
+  </div>
+</div>
+
+<div class="imsg-overlay" id="imsgOverlay" role="dialog" aria-modal="true" aria-label="Messages">
+  <div class="imsg-app" id="imsgApp">
+    <button class="imsg-app-close" id="imsgCloseBtn" aria-label="Close messages" title="Close (Esc)">×</button>
+    <aside class="imsg-sidebar" id="imsgSidebar">
+      <header class="imsg-sidebar-header"><h3>Messages</h3></header>
+      <div class="imsg-search"><span aria-hidden="true">🔍</span><input type="search" id="imsgSearch" placeholder="Search conversations or messages" autocomplete="off"></div>
+      <div class="imsg-conv-list" id="imsgConvList"></div>
+      <div class="imsg-sidebar-footer">
+        <div class="imsg-avatar-me" id="imsgMeAvatar">?</div>
+        <div class="imsg-me-info"><div class="imsg-me-name" id="imsgMeName">—</div><div class="imsg-me-user" id="imsgMeUser">@—</div></div>
+      </div>
+    </aside>
+    <section class="imsg-thread-panel" id="imsgThreadPanel">
+      <div class="imsg-empty" id="imsgEmpty"><div class="imsg-empty-icon">💬</div><h2>Select a conversation</h2><p>Choose someone from the sidebar to start messaging.</p></div>
+      <div class="imsg-thread hidden" id="imsgThread">
+        <header class="imsg-thread-header">
+          <button class="imsg-back" id="imsgBackBtn" aria-label="Back">‹</button>
+          <div class="imsg-avatar-sm" id="imsgThreadAvatar">?</div>
+          <div class="imsg-thread-info"><div class="imsg-thread-name" id="imsgThreadName">—</div><div class="imsg-thread-status" id="imsgThreadStatus">—</div></div>
+          <button class="imsg-info-btn" id="imsgInfoBtn" title="Info" aria-label="Info">ⓘ</button>
+        </header>
+        <div class="imsg-messages" id="imsgMessages"></div>
+        <div class="imsg-new-msg-pill" id="imsgNewMsgPill">↓ New message</div>
+        <div id="imsgMuteBannerSlot"></div>
+        <div id="imsgBlockBannerSlot"></div>
+        <div id="imsgReplyBar"></div>
+        <div class="imsg-input-row">
+          <button class="imsg-plus" id="imsgPlusBtn" aria-label="Attach">＋</button>
+          <input type="text" id="imsgInput" placeholder="iMessage" autocomplete="off">
+          <button class="imsg-send" id="imsgSendBtn" aria-label="Send">↑</button>
+        </div>
+      </div>
+    </section>
+    <div class="imsg-attach-sheet hidden" id="imsgAttachSheet">
+      <button class="imsg-attach-close" id="imsgAttachClose" aria-label="Close">×</button>
+      <div class="imsg-attach-grid">
+        <div class="imsg-attach-item" data-attach="photos"><div class="imsg-attach-ic ic-photos">🖼️</div><span>Photos</span></div>
+        <div class="imsg-attach-item" data-attach="camera"><div class="imsg-attach-ic ic-camera">📷</div><span>Camera</span></div>
+        <div class="imsg-attach-item" data-attach="video"><div class="imsg-attach-ic ic-video">🎥</div><span>Video</span></div>
+        <div class="imsg-attach-item" data-attach="location"><div class="imsg-attach-ic ic-location">📍</div><span>Location</span></div>
+        <div class="imsg-attach-item" data-attach="audio"><div class="imsg-attach-ic ic-audio">🎙️</div><span>Audio</span></div>
+        <div class="imsg-attach-item" data-attach="sticker"><div class="imsg-attach-ic ic-sticker">😀</div><span>Stickers</span></div>
+        <div class="imsg-attach-item" data-attach="pay"><div class="imsg-attach-ic ic-pay">💳</div><span>Apple Pay</span></div>
+        <div class="imsg-attach-item" data-attach="digital"><div class="imsg-attach-ic ic-digital">✋</div><span>Digital Touch</span></div>
+        <div class="imsg-attach-item" data-attach="effects"><div class="imsg-attach-ic ic-effects">✨</div><span>Effects</span></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgPreviewModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title" id="imsgPreviewTitle">Preview</div><button class="sb-attach-close" id="imsgPreviewClose">×</button></div>
+        <div class="sb-attach-body" id="imsgPreviewBody"></div>
+        <div class="sb-attach-foot"><button class="btn" id="imsgPreviewSend" style="background:var(--im-blue);color:#fff;border-color:var(--im-blue);font-weight:800">Send</button></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgCameraModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">Camera · <span id="imsgCamMode">Photo</span></div><button class="sb-attach-close" id="imsgCamClose">×</button></div>
+        <div class="sb-attach-body" style="padding:0"><video id="imsgCamVideo" autoplay playsinline style="width:100%;max-height:60vh;background:#000;border-radius:0"></video><canvas id="imsgCamCanvas" style="display:none"></canvas></div>
+        <div class="sb-attach-foot"><button class="btn" id="imsgCamFlip">🔄 Flip</button><button class="btn primary" id="imsgCamCapture">Capture</button></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgVoiceModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">Voice Message</div><button class="sb-attach-close" id="imsgVoiceCancel">×</button></div>
+        <div class="sb-attach-body"><div style="font-size:64px;margin:20px 0">🎙️</div><div style="font-family:var(--mono);font-size:24px;font-weight:900;color:var(--amber-2)" id="imsgVoiceTimer">0:00</div></div>
+        <div class="sb-attach-foot"><button class="btn danger" id="imsgVoiceCancelBtn">Cancel</button><button class="btn primary" id="imsgVoiceRecordBtn">Start Recording</button></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgPayModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">💳 Apple Pay</div><button class="sb-attach-close" id="imsgPayCancel">×</button></div>
+        <div class="sb-attach-body" style="align-items:stretch">
+          <div style="text-align:center;padding:6px 0;font-size:12px;color:var(--text-3)">Sending to <strong id="imsgPayName">—</strong></div>
+          <div class="imsg-pay-display">$<span id="imsgPayAmount">0.00</span></div>
+          <div class="imsg-pay-keypad">
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+            <button data-key=".">.</button><button data-key="0">0</button><button data-key="del">⌫</button>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--text-3);margin-top:8px">Balance: <span id="imsgPayBalance">$0.00</span></div>
+        </div>
+        <div class="sb-attach-foot"><button class="btn" id="imsgPayCancelBtn">Cancel</button><button class="btn primary" id="imsgPayConfirm" disabled>Pay <span id="imsgPayConfirmAmt">$0.00</span></button></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgDigitalModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">✋ Digital Touch</div><button class="sb-attach-close" id="imsgDigitalCancel">×</button></div>
+        <div class="sb-attach-body"><canvas id="imsgDigitalCanvas" width="400" height="400" class="imsg-digital-canvas"></canvas></div>
+        <div class="sb-attach-foot"><button class="btn" id="imsgDigitalCancelBtn">Cancel</button><button class="btn primary" id="imsgDigitalSend">Send</button></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgStickerModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">😀 Stickers</div><button class="sb-attach-close" id="imsgStickerCancel">×</button></div>
+        <div class="sb-attach-body"><div class="imsg-sticker-grid" id="imsgStickerGrid"></div></div>
+      </div>
+    </div>
+    <div class="sb-attach-modal hidden" id="imsgEffectsModal">
+      <div class="sb-attach-shell">
+        <div class="sb-attach-head"><div class="sb-attach-title">✨ Effects</div><button class="sb-attach-close" id="imsgEffectsCancel">×</button></div>
+        <div class="sb-attach-body" style="align-items:stretch"><div class="imsg-effects-grid" id="imsgEffectsGrid"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer-desktop">
+  <div class="site-footer-links">
+    <a href="about.html">About</a>
+    <a href="help.html">Help</a>
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </div>
+  <div class="site-footer-copy">SafeBeef v83 · Educational use only · © 2025</div>
+</footer>
+
+<script src="maintenance.js"></script>
+<script src="clock.js"></script>
+<script src="ip-ban.js"></script>
+<script src="realtime.js"></script>
+<script src="auth.js"></script>
+<script src="module-config.js"></script>
+<script src="hook-engine.js"></script>
+<script src="config-dialog.js"></script>
+<script src="module.js"></script>
+<script src="prank-engine.js"></script>
+<script src="real-apis.js"></script>
+<script src="toast.js"></script>
+<script src="prompt.js"></script>
+<script src="blocks.js"></script>
+<script src="app.js"></script>
+<script src="chat.js"></script>
+<script src="modules-runner.js"></script>
+<script src="mod-panel.js"></script>
+<script src="mod-panel-dialogs.js"></script>
+<script src="settings.js"></script>
+<script src="push.js"></script>
+<script src="live.js"></script>
+
+<!-- Service Worker registration + push init -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => {
+        console.log('[SW] Registered:', reg.scope);
+        return navigator.serviceWorker.ready;
+      })
+      .then(() => {
+        if (window.initPush) window.initPush();
+      })
+      .catch(err => console.warn('[SW] Registration failed:', err));
+  }
+</script>
+
+<!-- SafeBeef — Enhanced Profile Panel v83.2 -->
+<script>
+(function () {
+  if (window.__sbProfileV83_2) return;
+  window.__sbProfileV83_2 = true;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function hexToRgba(hex, a) {
+    if (!hex || typeof hex !== 'string' || hex.length < 7 || hex[0] !== '#') return `rgba(77,157,255,${a})`;
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    if ([r, g, b].some(n => isNaN(n))) return `rgba(77,157,255,${a})`;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  function safeColor(c, fallback) { return /^#[0-9a-f]{6}$/i.test(c || '') ? c : (fallback || '#4d9dff'); }
+
+  const COLORS = ['#4d9dff','#7ab4ff','#34d97f','#5cea9f','#ff5a6e','#ff8294','#ffb340','#ffc96b','#b586ff','#c9a5ff','#2ee6d6','#6df0e3','#ff66ff','#ffd93d','#00d9ff','#ff8c42','#f0f5fc','#8b92a8'];
+  const SHAPES = [{ key:'circle', label:'Circle' }, { key:'rounded', label:'Rounded' }, { key:'square', label:'Square' }];
+  const FONTS = [{ key:'default', label:'Default' }, { key:'mono', label:'Mono' }, { key:'serif', label:'Serif' }, { key:'bold', label:'Bold' }];
+  const PATTERNS = [{ key:'gradient', label:'Gradient' }, { key:'solid', label:'Solid' }, { key:'grid', label:'Grid' }, { key:'dots', label:'Dots' }, { key:'none', label:'None' }];
+  const EFFECTS = [{ key:'none', label:'None' }, { key:'glow', label:'Glow' }, { key:'pulse', label:'Pulse' }, { key:'float', label:'Float' }];
+  const PRESENCE = [{ key:'online', label:'Online', ico:'🟢' }, { key:'away', label:'Away', ico:'🟡' }, { key:'busy', label:'Busy', ico:'🔴' }, { key:'invisible', label:'Invisible', ico:'⚫' }];
+  const VISIBILITY = [{ key:'everyone', label:'Everyone' }, { key:'mods', label:'Moderators only' }, { key:'nobody', label:'Nobody' }];
+  // FIXED: string keys instead of 0xFFFFFFFF (which broke JSON serialization / reloads)
+  const STATUS_EXPIRES = [
+    { key:'never', label:'Never' },
+    { key:'1h', label:'1 hour' },
+    { key:'4h', label:'4 hours' },
+    { key:'24h', label:'24 hours' },
+    { key:'session', label:'Next sign-in' },
+  ];
+
+  function patternStyle(pattern, color) {
+    switch (pattern) {
+      case 'solid': return `linear-gradient(${hexToRgba(color, 0.12)}, ${hexToRgba(color, 0.12)})`;
+      case 'grid': return `repeating-linear-gradient(0deg, ${hexToRgba(color, 0.08)} 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, ${hexToRgba(color, 0.08)} 0 1px, transparent 1px 22px)`;
+      case 'dots': return `radial-gradient(${hexToRgba(color, 0.2)} 1px, transparent 1.5px) 0 0 / 14px 14px`;
+      case 'none': return 'transparent';
+      default: return `radial-gradient(ellipse at 50% 0%, ${hexToRgba(color, 0.18)}, transparent 70%)`;
+    }
+  }
+  function nameStyle(font, color) {
+    const s = {};
+    if (color) s.color = color;
+    if (font === 'mono') s.fontFamily = 'var(--mono)';
+    else if (font === 'serif') s.fontFamily = 'Georgia, serif';
+    else if (font === 'bold') s.fontWeight = '900';
+    else s.fontWeight = '800';
+    return Object.entries(s).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`).join(';');
+  }
+  function effectCSS(effect, color) {
+    if (effect === 'glow') return { boxShadow: `0 0 0 3px ${color}, 0 0 28px ${hexToRgba(color, 0.7)}`, animation: 'none' };
+    if (effect === 'pulse') return { boxShadow: `0 0 0 3px ${color}, 0 0 20px ${hexToRgba(color, 0.5)}`, animation: 'sbProfilePulse 2s ease-in-out infinite' };
+    if (effect === 'float') return { boxShadow: `0 0 0 3px ${color}`, animation: 'sbProfileFloat 3s ease-in-out infinite' };
+    return { boxShadow: `0 0 0 3px ${color}, 0 8px 32px ${hexToRgba(color, 0.4)}`, animation: 'none' };
+  }
+
+  function injectAnimCSS() {
+    if (document.getElementById('sb-profile-anim-css')) return;
+    const s = document.createElement('style');
+    s.id = 'sb-profile-anim-css';
+    s.textContent = `
+      @keyframes sbProfilePulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
+      @keyframes sbProfileFloat { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+    `;
+    document.head.appendChild(s);
+  }
+  injectAnimCSS();
+
+  window.openProfile = function () {
+    const me = window.ME;
+    if (!me) { try { window.toast?.({ title:'Not signed in', msg:'Please sign in again', type:'error' }); } catch (e) {} return; }
+    document.querySelectorAll('.profile-panel-v2').forEach(el => el.remove());
+
+    const users = (window.Auth && Auth.getUsers) ? Auth.getUsers() : {};
+    const fresh = users[me.username] || me;
+
+    let frozen = {}, bans = { users: {} }, warnings = {};
+    try { frozen = JSON.parse(localStorage.getItem('sb26_frozen_users') || '{}') || {}; } catch (e) {}
+    try { bans = (window.Auth && Auth.getBans) ? Auth.getBans() : { users: {} }; } catch (e) {}
+    try { warnings = JSON.parse(localStorage.getItem('sb26_warnings') || '{}') || {}; } catch (e) {}
+
+    const myWarnings = (warnings[me.username] || []).filter(w => w.at >= Date.now() - 86400000);
+    const myBan = bans.users && bans.users[me.username];
+    const isFrozen = !!frozen[me.username];
+    const joinedAt = fresh.createdAt || fresh.joinedAt || Date.now();
+    const isOwner = window.Auth && Auth.isOwner && Auth.isOwner(me.username);
+    const isMod = window.Auth && Auth.isMod && Auth.isMod(me.username);
+    const roleBadge = isOwner ? '<span class="role-tag owner">OWNER</span>' : isMod ? '<span class="role-tag mod">MOD</span>' : '';
+
+    let msgCount = 0;
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('sb26_chat_')).forEach(k => {
+        try { const msgs = JSON.parse(localStorage.getItem(k) || '[]'); msgCount += msgs.filter(m => m.from === me.username).length; } catch (e) {}
+      });
+    } catch (e) {}
+
+    // ---- Migrate legacy numeric statusExpires to string keys ----
+    let initialStatusExpires = fresh.statusExpires || 'never';
+    if (typeof initialStatusExpires === 'number') {
+      const numMap = { 0: 'never', 3600000: '1h', 14400000: '4h', 86400000: '24h', 0xFFFFFFFF: 'session' };
+      initialStatusExpires = numMap[initialStatusExpires] || 'never';
+    }
+
+    // ---- Expired status cleanup ----
+    const savedStatusText = (fresh.statusExpiresAt && fresh.statusExpiresAt < Date.now()) ? '' : (fresh.statusText || '');
+
+    const state = {
+      display: fresh.display || me.username,
+      avatar: fresh.avatar || (me.username || '?').slice(0, 2).toUpperCase(),
+      bio: fresh.bio || '',
+      pronouns: fresh.pronouns || '',
+      color: safeColor(fresh.color, '#4d9dff'),
+      nameColor: safeColor(fresh.nameColor, ''),
+      avatarShape: fresh.avatarShape || 'circle',
+      fontStyle: fresh.fontStyle || 'default',
+      bannerPattern: fresh.bannerPattern || 'gradient',
+      profileEffect: fresh.profileEffect || 'none',
+      presence: fresh.presence || 'online',
+      statusText: savedStatusText,
+      statusExpires: initialStatusExpires,
+      bioVisibility: fresh.bioVisibility || 'everyone',
+      showOnline: fresh.showOnline !== false,
+      showLastSeen: fresh.showLastSeen !== false,
+      allowModDMs: fresh.allowModDMs !== false,
+    };
+    const initialStateJSON = JSON.stringify(state);
+    let activeTab = 'identity';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'settings-panel profile-panel-v2';
+    overlay.innerHTML = `
+      <div class="settings-shell">
+        <div class="settings-head">
+          <div class="settings-head-left">
+            <div class="settings-head-icon" id="pv2HeadIcon">${esc(state.avatar)}</div>
+            <div class="settings-head-text">
+              <h2>My Profile</h2>
+              <div class="settings-head-meta">@${esc(me.username)} ${roleBadge}</div>
+            </div>
+          </div>
+          <button class="imsg-close" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="settings-body" style="padding:0;gap:0">
+          <div class="pv2-hero" id="pv2Hero">
+            <div class="pv2-hero-pattern" id="pv2HeroPattern"></div>
+            <div class="pv2-avatar" id="pv2Avatar" title="Click to edit avatar">${esc(state.avatar)}</div>
+            <div class="pv2-display" id="pv2Display">${esc(state.display)} ${roleBadge}</div>
+            <div class="pv2-username">@${esc(me.username)}</div>
+            <div class="pv2-pronouns" id="pv2Pronouns">${state.pronouns ? esc(state.pronouns) : ''}</div>
+            <div class="pv2-status-row" id="pv2StatusRow"></div>
+            <div class="pv2-bio" id="pv2Bio"></div>
+            <div class="pv2-badges">
+              ${isFrozen ? '<span class="mod-badge frozen">🧊 FROZEN</span>' : ''}
+              ${myBan ? `<span class="mod-badge perm">🚫 BANNED${myBan.expiresAt ? ' · ' + new Date(myBan.expiresAt).toLocaleDateString() : ''}</span>` : ''}
+              ${myWarnings.length ? `<span class="mod-badge warn">⚠ ${myWarnings.length} warning${myWarnings.length === 1 ? '' : 's'}</span>` : ''}
+              <span class="mod-badge success">✓ Signed in</span>
+            </div>
+          </div>
+          <div class="pv2-stats-grid">
+            <div class="pv2-stat"><div class="pv2-stat-val">${msgCount}</div><div class="pv2-stat-label">Messages</div></div>
+            <div class="pv2-stat"><div class="pv2-stat-val" style="font-size:14px">${new Date(joinedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</div><div class="pv2-stat-label">Joined</div></div>
+            <div class="pv2-stat"><div class="pv2-stat-val" style="color:${myWarnings.length ? 'var(--amber-2)' : 'var(--text)'}">${myWarnings.length}</div><div class="pv2-stat-label">Warns</div></div>
+            <div class="pv2-stat"><div class="pv2-stat-val" style="color:${isFrozen ? 'var(--purple-2)' : myBan ? 'var(--red-2)' : 'var(--green-2)'}">${isFrozen ? '❄' : myBan ? '🚫' : '✓'}</div><div class="pv2-stat-label">Status</div></div>
+          </div>
+          <div class="pv2-tabs" id="pv2Tabs"></div>
+          <div class="pv2-body" id="pv2TabBody"></div>
+        </div>
+        <div class="mod-dialog-foot" style="border-top:1px solid var(--border);padding:14px 22px;display:flex;gap:10px;justify-content:flex-end;background:var(--surface-2)">
+          <button class="btn" id="pv2Cancel" type="button">Cancel</button>
+          <button class="btn primary" id="pv2Save" type="button">Save Changes</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    const prevBodyOv = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const close = () => {
+      overlay.remove();
+      document.body.style.overflow = prevBodyOv;
+      document.removeEventListener('keydown', escH);
+    };
+    const escH = e => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', escH);
+    overlay.querySelector('.imsg-close').onclick = close;
+    overlay.querySelector('#pv2Cancel').onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    // Refs
+    const heroPatternEl = overlay.querySelector('#pv2HeroPattern');
+    const avatarEl = overlay.querySelector('#pv2Avatar');
+    const displayEl = overlay.querySelector('#pv2Display');
+    const pronounsEl = overlay.querySelector('#pv2Pronouns');
+    const statusRowEl = overlay.querySelector('#pv2StatusRow');
+    const bioEl = overlay.querySelector('#pv2Bio');
+    const headIconEl = overlay.querySelector('#pv2HeadIcon');
+    const tabsEl = overlay.querySelector('#pv2Tabs');
+    const bodyEl = overlay.querySelector('#pv2TabBody');
+    const saveBtn = overlay.querySelector('#pv2Save');
+
+    // Live render
+    function renderHero() {
+      heroPatternEl.style.background = patternStyle(state.bannerPattern, state.color);
+
+      avatarEl.textContent = state.avatar || '?';
+      avatarEl.style.background = state.color;
+      const radius = state.avatarShape === 'square' ? '10px' : state.avatarShape === 'rounded' ? '22px' : '50%';
+      avatarEl.style.borderRadius = radius;
+      const eff = effectCSS(state.profileEffect, state.color);
+      avatarEl.style.boxShadow = eff.boxShadow;
+      avatarEl.style.animation = eff.animation || 'none';
+      avatarEl.style.opacity = state.presence === 'invisible' ? '0.55' : '1';
+      headIconEl.textContent = state.avatar || '?';
+      headIconEl.style.background = state.color;
+      headIconEl.style.borderRadius = '14px';
+
+      displayEl.innerHTML = `${esc(state.display || me.username)} ${roleBadge}`;
+      displayEl.setAttribute('style', `position:relative;font-size:22px;display:flex;align-items:center;gap:6px;text-align:center;flex-wrap:wrap;justify-content:center;line-height:1.25;${nameStyle(state.fontStyle, state.nameColor)}`);
+
+      pronounsEl.textContent = state.pronouns || '';
+      bioEl.innerHTML = state.bio ? esc(state.bio) : 'No bio set';
+      bioEl.classList.toggle('empty', !state.bio);
+
+      const presenceInfo = PRESENCE.find(p => p.key === state.presence) || PRESENCE[0];
+      const presenceCls = state.presence === 'online' ? 'success' : state.presence === 'away' ? 'warn' : state.presence === 'busy' ? 'perm' : 'shadow';
+      const presenceBadge = `<span class="mod-badge ${presenceCls}">${presenceInfo.ico} ${presenceInfo.label}</span>`;
+      const statusBadge = state.statusText ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--surface-3);border:1px solid var(--border-3);border-radius:99px;font-size:11px;color:var(--text-2);line-height:1.3">${esc(state.statusText)}</span>` : '';
+      statusRowEl.innerHTML = presenceBadge + statusBadge;
+
+      updateSaveState();
+    }
+
+    function updateSaveState() {
+      const dirty = JSON.stringify(state) !== initialStateJSON;
+      saveBtn.classList.toggle('dirty', dirty);
+      saveBtn.disabled = !dirty;
+    }
+
+    function renderTabs() {
+      const tabs = [
+        { key:'identity', label:'Identity', ico:'👤' },
+        { key:'appearance', label:'Appearance', ico:'🎨' },
+        { key:'status', label:'Status', ico:'💬' },
+        { key:'privacy', label:'Privacy', ico:'🔒' },
+        { key:'account', label:'Account', ico:'⚙' },
+      ];
+      tabsEl.innerHTML = tabs.map(t => `<button class="pv2-tab ${activeTab === t.key ? 'on' : ''}" data-tab="${t.key}" type="button"><span class="pv2-tab-ico">${t.ico}</span>${t.label}</button>`).join('');
+      tabsEl.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.onclick = () => { activeTab = btn.dataset.tab; renderTabs(); renderBody(); };
+      });
+    }
+
+    function colorRow(current, name) {
+      return `
+        <div class="pv2-color-current">
+          <div class="pv2-color-current-chip" style="background:${current}"></div>
+          <span class="pv2-color-current-label">Current color</span>
+          <span class="pv2-color-current-hex">${current.toUpperCase()}</span>
+        </div>
+        <div class="pv2-colors" data-colorpicker="${name}">
+          ${COLORS.map(c => {
+            const on = c.toLowerCase() === String(current).toLowerCase();
+            return `<button class="pv2-color ${on ? 'on' : ''}" data-color="${c}" type="button" style="background:${c};color:${c}" title="${c}" aria-label="Color ${c}"></button>`;
+          }).join('')}
+        </div>`;
+    }
+
+    function segRow(current, options, name) {
+      return `<div class="pv2-seg" data-seg="${name}">${options.map(o => `<button data-value="${o.key}" type="button" class="${String(o.key) === String(current) ? 'on' : ''}">${o.label}</button>`).join('')}</div>`;
+    }
+
+    function toggleRow(current, name, label, desc) {
+      return `<div class="pv2-row"><div class="pv2-row-body"><div class="pv2-row-title">${label}</div>${desc ? `<div class="pv2-row-desc">${desc}</div>` : ''}</div><button class="pv2-toggle ${current ? 'on' : ''}" data-toggle="${name}" type="button" role="switch" aria-checked="${current}" aria-label="${label}"></button></div>`;
+    }
+
+    function renderBody() {
+      if (activeTab === 'identity') {
+        bodyEl.innerHTML = `
+          <div class="pv2-group">
+            <label class="pv2-label" for="pv2InputDisplay">Display name</label>
+            <input id="pv2InputDisplay" class="pv2-input" type="text" maxlength="24" value="${esc(state.display)}" placeholder="Your display name">
+            <div class="pv2-hint"><span>Shown across the app</span><span class="pv2-hint-count" id="pv2DisplayCount">${state.display.length}/24</span></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label" for="pv2InputAvatar">Avatar (1–2 chars)</label>
+            <input id="pv2InputAvatar" class="pv2-input" type="text" maxlength="2" value="${esc(state.avatar)}" style="text-transform:uppercase;max-width:130px;text-align:center;font-size:16px;font-weight:800;letter-spacing:.5px">
+            <div class="pv2-hint"><span>Letters or emoji shown next to your name</span></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label" for="pv2InputPronouns">Pronouns (optional)</label>
+            <input id="pv2InputPronouns" class="pv2-input" type="text" maxlength="20" value="${esc(state.pronouns)}" placeholder="e.g. they/them">
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label" for="pv2InputBio">Bio</label>
+            <textarea id="pv2InputBio" class="pv2-input pv2-textarea" maxlength="160" placeholder="Tell us about yourself…">${esc(state.bio)}</textarea>
+            <div class="pv2-hint"><span>Visible on your profile card</span><span class="pv2-hint-count" id="pv2BioCount">${state.bio.length}/160</span></div>
+          </div>`;
+        wireIdentity();
+      } else if (activeTab === 'appearance') {
+        bodyEl.innerHTML = `
+          <div class="pv2-group">
+            <label class="pv2-label">Avatar color</label>
+            ${colorRow(state.color, 'color')}
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Display name color</label>
+            ${colorRow(state.nameColor || '#f0f5fc', 'nameColor')}
+            <div class="pv2-actions"><button class="pv2-action" id="pv2ClearNameColor" type="button">Use default color</button></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Avatar shape</label>
+            ${segRow(state.avatarShape, SHAPES, 'avatarShape')}
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Display name font</label>
+            ${segRow(state.fontStyle, FONTS, 'fontStyle')}
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Banner pattern</label>
+            ${segRow(state.bannerPattern, PATTERNS, 'bannerPattern')}
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Profile effect</label>
+            ${segRow(state.profileEffect, EFFECTS, 'profileEffect')}
+          </div>`;
+        wireAppearance();
+      } else if (activeTab === 'status') {
+        bodyEl.innerHTML = `
+          <div class="pv2-group">
+            <label class="pv2-label">Presence</label>
+            ${segRow(state.presence, PRESENCE.map(p => ({ key: p.key, label: `${p.ico} ${p.label}` })), 'presence')}
+            <div class="pv2-hint"><span>Invisible hides you from the online list</span></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label" for="pv2InputStatusText">Custom status</label>
+            <input id="pv2InputStatusText" class="pv2-input" type="text" maxlength="60" value="${esc(state.statusText)}" placeholder="What are you up to?">
+            <div class="pv2-hint"><span>Shown on your profile and in chat</span><span class="pv2-hint-count" id="pv2StatusCount">${state.statusText.length}/60</span></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Clear status after</label>
+            ${segRow(state.statusExpires, STATUS_EXPIRES, 'statusExpires')}
+          </div>`;
+        wireStatus();
+      } else if (activeTab === 'privacy') {
+        bodyEl.innerHTML = `
+          <div class="pv2-group">
+            <label class="pv2-label">Who can see your bio</label>
+            ${segRow(state.bioVisibility, VISIBILITY, 'bioVisibility')}
+          </div>
+          ${toggleRow(state.showOnline, 'showOnline', 'Show online status', 'Others see when you are online')}
+          ${toggleRow(state.showLastSeen, 'showLastSeen', 'Show last seen', 'Others see when you were last active')}
+          ${toggleRow(state.allowModDMs, 'allowModDMs', 'Allow mod DMs', 'Moderators can message you directly')}
+        `;
+        wirePrivacy();
+      } else if (activeTab === 'account') {
+        bodyEl.innerHTML = `
+          <div class="pv2-group">
+            <label class="pv2-label">Username</label>
+            <input class="pv2-input" type="text" value="@${esc(me.username)}" readonly style="opacity:.7;cursor:not-allowed">
+            <div class="pv2-hint"><span>Username cannot be changed after account creation</span></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Data</label>
+            <div class="pv2-row"><div class="pv2-row-body"><div class="pv2-row-title">Export profile data</div><div class="pv2-row-desc">Download all your profile settings as JSON</div></div><button class="pv2-action" id="pv2Export" type="button">Export</button></div>
+            <div class="pv2-row"><div class="pv2-row-body"><div class="pv2-row-title" style="color:var(--red-2)">Reset profile to defaults</div><div class="pv2-row-desc">Clears bio, colors, and all appearance settings</div></div><button class="pv2-action danger" id="pv2Reset" type="button">Reset</button></div>
+          </div>
+          <div class="pv2-group">
+            <label class="pv2-label">Appearance import/export</label>
+            <div class="pv2-actions">
+              <button class="pv2-action" id="pv2ExportLook" type="button">Copy appearance JSON</button>
+              <button class="pv2-action" id="pv2ImportLook" type="button">Paste appearance JSON</button>
+            </div>
+          </div>`;
+        wireAccount();
+      }
+    }
+
+    function wireIdentity() {
+      const display = bodyEl.querySelector('#pv2InputDisplay');
+      const avatar = bodyEl.querySelector('#pv2InputAvatar');
+      const pronouns = bodyEl.querySelector('#pv2InputPronouns');
+      const bio = bodyEl.querySelector('#pv2InputBio');
+      const dispCount = bodyEl.querySelector('#pv2DisplayCount');
+      const bioCount = bodyEl.querySelector('#pv2BioCount');
+      if (display) display.oninput = () => {
+        const v = display.value;
+        dispCount.textContent = `${v.length}/24`;
+        dispCount.classList.toggle('limit', v.length >= 24);
+        state.display = v;
+        renderHero();
+      };
+      if (avatar) avatar.oninput = () => {
+        const v = (avatar.value || '').toUpperCase().slice(0, 2);
+        avatar.value = v;
+        state.avatar = v || '?';
+        renderHero();
+      };
+      if (pronouns) pronouns.oninput = () => { state.pronouns = pronouns.value; renderHero(); };
+      if (bio) bio.oninput = () => {
+        bioCount.textContent = `${bio.value.length}/160`;
+        bioCount.classList.toggle('limit', bio.value.length >= 160);
+        state.bio = bio.value;
+        renderHero();
+      };
+    }
+
+    function wireAppearance() {
+      bodyEl.querySelectorAll('[data-colorpicker]').forEach(picker => {
+        const name = picker.dataset.colorpicker;
+        picker.querySelectorAll('[data-color]').forEach(btn => {
+          btn.onclick = () => {
+            state[name] = btn.dataset.color;
+            renderHero();
+            renderBody();
+          };
+        });
+      });
+      const clearNameBtn = bodyEl.querySelector('#pv2ClearNameColor');
+      if (clearNameBtn) clearNameBtn.onclick = () => { state.nameColor = ''; renderHero(); renderBody(); };
+
+      bodyEl.querySelectorAll('[data-seg]').forEach(seg => {
+        const name = seg.dataset.seg;
+        seg.querySelectorAll('[data-value]').forEach(btn => {
+          btn.onclick = () => {
+            state[name] = btn.dataset.value;
+            seg.querySelectorAll('[data-value]').forEach(b => b.classList.toggle('on', b.dataset.value === btn.dataset.value));
+            renderHero();
+          };
+        });
+      });
+    }
+
+    function wireStatus() {
+      bodyEl.querySelectorAll('[data-seg]').forEach(seg => {
+        const name = seg.dataset.seg;
+        seg.querySelectorAll('[data-value]').forEach(btn => {
+          btn.onclick = () => {
+            state[name] = btn.dataset.value;
+            seg.querySelectorAll('[data-value]').forEach(b => b.classList.toggle('on', b.dataset.value === btn.dataset.value));
+            renderHero();
+          };
+        });
+      });
+      const statusInput = bodyEl.querySelector('#pv2InputStatusText');
+      const statusCount = bodyEl.querySelector('#pv2StatusCount');
+      if (statusInput) statusInput.oninput = () => {
+        statusCount.textContent = `${statusInput.value.length}/60`;
+        statusCount.classList.toggle('limit', statusInput.value.length >= 60);
+        state.statusText = statusInput.value;
+        renderHero();
+      };
+    }
+
+    function wirePrivacy() {
+      bodyEl.querySelectorAll('[data-seg]').forEach(seg => {
+        const name = seg.dataset.seg;
+        seg.querySelectorAll('[data-value]').forEach(btn => {
+          btn.onclick = () => {
+            state[name] = btn.dataset.value;
+            seg.querySelectorAll('[data-value]').forEach(b => b.classList.toggle('on', b.dataset.value === btn.dataset.value));
+            updateSaveState();
+          };
+        });
+      });
+      bodyEl.querySelectorAll('[data-toggle]').forEach(btn => {
+        const name = btn.dataset.toggle;
+        btn.onclick = () => {
+          state[name] = !state[name];
+          btn.classList.toggle('on', state[name]);
+          btn.setAttribute('aria-checked', String(state[name]));
+          updateSaveState();
+        };
+      });
+    }
+
+    function wireAccount() {
+      const exportBtn = bodyEl.querySelector('#pv2Export');
+      if (exportBtn) exportBtn.onclick = () => {
+        try {
+          const dump = { username: me.username, exportedAt: new Date().toISOString(), profile: { ...state } };
+          const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `safebeef-profile-${me.username}-${Date.now()}.json`;
+          a.click();
+          window.toast?.({ title:'Exported', msg:'Profile data downloaded', type:'success', dur: 2500 });
+        } catch (e) { window.toast?.({ title:'Export failed', msg:e.message, type:'error' }); }
+      };
+
+      const resetBtn = bodyEl.querySelector('#pv2Reset');
+      if (resetBtn) resetBtn.onclick = () => {
+        if (!confirm('Reset your profile to defaults? This clears bio, colors, and all appearance settings.')) return;
+        state.display = me.username;
+        state.avatar = (me.username || '?').slice(0, 2).toUpperCase();
+        state.bio = '';
+        state.pronouns = '';
+        state.color = '#4d9dff';
+        state.nameColor = '';
+        state.avatarShape = 'circle';
+        state.fontStyle = 'default';
+        state.bannerPattern = 'gradient';
+        state.profileEffect = 'none';
+        state.presence = 'online';
+        state.statusText = '';
+        state.statusExpires = 'never';
+        state.bioVisibility = 'everyone';
+        state.showOnline = true;
+        state.showLastSeen = true;
+        state.allowModDMs = true;
+        renderHero();
+        renderBody();
+        window.toast?.({ title:'Reset', msg:'Profile restored to defaults', type:'success', dur: 2200 });
+      };
+
+      const exportLook = bodyEl.querySelector('#pv2ExportLook');
+      if (exportLook) exportLook.onclick = () => {
+        const look = { color: state.color, nameColor: state.nameColor, avatarShape: state.avatarShape, fontStyle: state.fontStyle, bannerPattern: state.bannerPattern, profileEffect: state.profileEffect };
+        const json = JSON.stringify(look);
+        try {
+          navigator.clipboard.writeText(json);
+          window.toast?.({ title:'Copied', msg:'Appearance JSON copied to clipboard', type:'success', dur: 2200 });
+        } catch (e) {
+          window.toast?.({ title:'Copy failed', msg:'Clipboard not available', type:'warn' });
+        }
+      };
+
+      const importLook = bodyEl.querySelector('#pv2ImportLook');
+      if (importLook) importLook.onclick = async () => {
+        let text = '';
+        try { text = await navigator.clipboard.readText(); } catch (e) { text = prompt('Paste appearance JSON:') || ''; }
+        if (!text) return;
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed.color) state.color = safeColor(parsed.color, state.color);
+          if (typeof parsed.nameColor === 'string') state.nameColor = safeColor(parsed.nameColor, '');
+          if (parsed.avatarShape) state.avatarShape = parsed.avatarShape;
+          if (parsed.fontStyle) state.fontStyle = parsed.fontStyle;
+          if (parsed.bannerPattern) state.bannerPattern = parsed.bannerPattern;
+          if (parsed.profileEffect) state.profileEffect = parsed.profileEffect;
+          renderHero();
+          renderBody();
+          window.toast?.({ title:'Imported', msg:'Appearance applied', type:'success', dur: 2200 });
+        } catch (e) {
+          window.toast?.({ title:'Invalid JSON', msg:'Could not parse appearance data', type:'error' });
+        }
+      };
+    }
+
+    // Avatar click → jump to identity tab
+    avatarEl.onclick = () => {
+      activeTab = 'identity';
+      renderTabs();
+      renderBody();
+      setTimeout(() => bodyEl.querySelector('#pv2InputAvatar')?.focus(), 60);
+    };
+
+    // Save with loading state
+    saveBtn.onclick = () => {
+      if (saveBtn.disabled) return;
+      const newDisplay = (state.display || '').trim().slice(0, 24) || me.username;
+      const newAvatar = (state.avatar || '').trim().toUpperCase().slice(0, 2) || (me.username || '?').slice(0, 2).toUpperCase();
+      const newBio = (state.bio || '').trim().slice(0, 160);
+      const newPronouns = (state.pronouns || '').trim().slice(0, 20);
+      const newColor = safeColor(state.color, '#4d9dff');
+      const newNameColor = safeColor(state.nameColor, '');
+      const newStatusText = (state.statusText || '').trim().slice(0, 60);
+
+      // FIXED: statusExpires now uses string keys → clean timestamp math
+      const statusExpiresAt = (() => {
+        const map = { '1h': 3600000, '4h': 14400000, '24h': 86400000 };
+        const ms = map[state.statusExpires];
+        return (ms && newStatusText) ? Date.now() + ms : null;
+      })();
+
+      const patch = {
+        display: newDisplay,
+        avatar: newAvatar,
+        bio: newBio,
+        pronouns: newPronouns,
+        color: newColor,
+        nameColor: newNameColor,
+        avatarShape: state.avatarShape,
+        fontStyle: state.fontStyle,
+        bannerPattern: state.bannerPattern,
+        profileEffect: state.profileEffect,
+        presence: state.presence,
+        statusText: newStatusText,
+        statusExpires: state.statusExpires,
+        statusExpiresAt,
+        bioVisibility: state.bioVisibility,
+        showOnline: state.showOnline,
+        showLastSeen: state.showLastSeen,
+        allowModDMs: state.allowModDMs,
+      };
+
+      saveBtn.classList.add('loading');
+      saveBtn.textContent = 'Saving';
+
+      try {
+        const all = Auth.getUsers();
+        if (all[me.username]) {
+          Object.assign(all[me.username], patch);
+          if (Auth.saveUsers) Auth.saveUsers(all);
+          else localStorage.setItem('sb26_users', JSON.stringify(all));
+        }
+      } catch (e) { console.warn('[profile] save error', e); }
+
+      Object.assign(me, patch);
+
+      const navAv = document.getElementById('myAvatar');
+      if (navAv) { navAv.textContent = newAvatar; navAv.style.background = newColor; }
+
+      if (window.setPageTitle) window.setPageTitle();
+
+      try { window.SafeBeef?.appChannel?.postMessage({ type: 'profile-updated', username: me.username, patch }); } catch (e) {}
+      try { const bc = new BroadcastChannel('sb26_profile_sync'); bc.postMessage({ action: 'profile-changed', username: me.username, patch }); bc.close(); } catch (e) {}
+
+      if (window.updateMePanel) window.updateMePanel();
+      if (window.renderConversationList) window.renderConversationList();
+      if (window.renderHookListV28) window.renderHookListV28();
+      if (window.Live) { try { Live.emit('userList'); Live.emit('onlineUsers'); } catch (e) {} }
+
+      try { window.toast({ title: 'Profile saved', msg: 'Live across all your open tabs', type: 'success', dur: 2600 }); } catch (e) {}
+
+      setTimeout(() => close(), 380);
+    };
+
+    // Init
+    renderTabs();
+    renderBody();
+    renderHero();
+  };
+
+  // Cross-tab sync
+  try {
+    const bc = new BroadcastChannel('sb26_profile_sync');
+    bc.onmessage = (e) => {
+      const m = e.data || {};
+      if (m.action !== 'profile-changed') return;
+      const me = window.ME;
+      if (!me || m.username !== me.username) return;
+      Object.assign(me, m.patch || {});
+      const navAv = document.getElementById('myAvatar');
+      if (navAv) { navAv.textContent = me.avatar || '?'; navAv.style.background = me.color || '#4d9dff'; }
+      if (window.setPageTitle) window.setPageTitle();
+      if (window.updateMePanel) window.updateMePanel();
+      if (window.renderConversationList) window.renderConversationList();
+    };
+  } catch (e) {}
+
+  window.App = window.App || {};
+  window.App.openProfile = () => window.openProfile();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "safebeef",
+  "version": "83.0.0",
+  "description": "SafeBeef — Browser-based pentest simulator for education. Runs on localhost.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "install:deps": "npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "compression": "^1.7.4",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": ["pentest", "simulator", "education", "localhost"],
+  "license": "MIT"
+}

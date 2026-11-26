@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-motion="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<title>Maintenance — SafeBeef</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="sb-maint-body">
+<div class="sb-maint-bg">
+  <div class="sb-maint-grid"></div>
+  <div class="sb-maint-glow sb-maint-glow-1"></div>
+  <div class="sb-maint-glow sb-maint-glow-2"></div>
+</div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<main class="sb-maint-shell" id="main-content" role="main" tabindex="-1">
+  <div class="sb-maint-card">
+    <div class="sb-maint-icon-wrap">
+      <div class="sb-maint-icon">🛠️</div>
+      <div class="sb-maint-pulse"></div>
+    </div>
+    <h1 class="sb-maint-title">We'll be right back</h1>
+    <p class="sb-maint-sub" id="sbMaintMessage">SafeBeef is getting an upgrade. Hang tight.</p>
+    <div class="sb-maint-info">
+      <div class="sb-maint-info-row">
+        <span class="sb-maint-info-label">Status</span>
+        <span class="sb-maint-info-val"><span class="sb-maint-dot"></span> Under maintenance</span>
+      </div>
+      <div class="sb-maint-info-row" id="sbMaintETA" style="display:none">
+        <span class="sb-maint-info-label">Estimated return</span>
+        <span class="sb-maint-info-val sb-maint-eta" id="sbMaintETAValue">—</span>
+      </div>
+      <div class="sb-maint-info-row" id="sbMaintBy" style="display:none">
+        <span class="sb-maint-info-label">Announced by</span>
+        <span class="sb-maint-info-val" id="sbMaintByValue">—</span>
+      </div>
+    </div>
+    <div class="sb-maint-status">
+      <div class="sb-maint-spinner"></div>
+      <span>Auto-checking every 5s — you'll be redirected automatically</span>
+    </div>
+    <div class="sb-maint-actions">
+      <button class="sb-maint-btn primary" id="sbMaintRetry" type="button"><span>↻</span> Retry now</button>
+      <button class="sb-maint-btn" id="sbMaintSignOut" type="button"><span>🚪</span> Sign out</button>
+    </div>
+  </div>
+  <div class="sb-maint-footer" role="contentinfo"><span>SafeBeef · Educational pentest simulator</span></div>
+</main>
+<script src="maintenance.js"></script>
+<script>
+(function () {
+  function render() {
+    const m = SB_Maintenance.get();
+    const msgEl = document.getElementById('sbMaintMessage');
+    if (msgEl) msgEl.textContent = m.message || 'SafeBeef is getting an upgrade. Hang tight.';
+    const etaRow = document.getElementById('sbMaintETA');
+    const etaVal = document.getElementById('sbMaintETAValue');
+    if (m.until && m.until > Date.now()) {
+      if (etaRow) etaRow.style.display = '';
+      if (etaVal) {
+        const mins = Math.ceil((m.until - Date.now()) / 60000);
+        etaVal.textContent = mins < 60 ? `~${mins} min` : `~${Math.ceil(mins/60)} hr`;
+      }
+    } else if (etaRow) etaRow.style.display = 'none';
+    const byRow = document.getElementById('sbMaintBy');
+    const byVal = document.getElementById('sbMaintByValue');
+    if (m.by) { if (byRow) byRow.style.display = ''; if (byVal) byVal.textContent = '@' + m.by; }
+    else if (byRow) byRow.style.display = 'none';
+  }
+  function tryRedirect() { if (!SB_Maintenance.enabled()) { location.replace('index.html'); return true; } return false; }
+  if (tryRedirect()) return;
+  render();
+  document.getElementById('sbMaintRetry').onclick = () => {
+    if (tryRedirect()) return;
+    const btn = document.getElementById('sbMaintRetry');
+    btn.disabled = true; btn.innerHTML = '<span>⏳</span> Still down…';
+    setTimeout(() => { btn.disabled = false; btn.innerHTML = '<span>↻</span> Retry now'; }, 1400);
+  };
+  document.getElementById('sbMaintSignOut').onclick = () => {
+    try { window.Auth && Auth.logout(); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    location.replace('auth.html');
+  };
+  SB_Maintenance.subscribe(() => { if (tryRedirect()) return; render(); });
+  setInterval(() => { if (tryRedirect()) return; render(); }, 5000);
+})();
+</script>
+</body>
+</html>
