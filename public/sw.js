@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safebeef-v36';
+const CACHE_NAME = 'safebeef-v37';
 const ASSETS = [
   './',
   './index.html',

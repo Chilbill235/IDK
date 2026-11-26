@@ -8,6 +8,7 @@ const PUSH_PUBLIC_KEY_URL = '/__sb__/push/vapid-public-key';
 const PUSH_SUBSCRIBE_URL = '/__sb__/push/subscribe';
 const PUSH_UNSUBSCRIBE_URL = '/__sb__/push/unsubscribe';
 const PUSH_TEST_URL = '/__sb__/push/test';
+const PUSH_STATUS_URL = '/__sb__/push/subscriptions';
 
 const PUSH_SETTING_KEY = 'sb26_push_subscribed';
 const PUSH_SUB_ENDPOINT_KEY = 'sb26_push_endpoint';
@@ -41,6 +42,10 @@ window.isPushSupported = function () {
   return !!(window.serviceWorker && 'PushManager' in window);
 };
 
+function getPushUsername() {
+  return window.__sbPushUsername || (window.ME && window.ME.username) || 'unknown';
+}
+
 window.subscribePush = async function () {
   if (!window.isPushSupported()) {
     return { granted: false, subscribed: false, error: 'Push API not supported' };
@@ -59,6 +64,7 @@ window.subscribePush = async function () {
       pushRegistration = existing;
       try { localStorage.setItem(PUSH_SETTING_KEY, 'true'); } catch (_) {}
       try { localStorage.setItem(PUSH_SUB_ENDPOINT_KEY, existing.endpoint); } catch (_) {}
+      await registerWithServer(existing);
       return { granted: true, subscribed: true };
     }
   } catch (e) {
@@ -85,18 +91,8 @@ window.subscribePush = async function () {
     try { localStorage.setItem(PUSH_SETTING_KEY, 'true'); } catch (_) {}
     try { localStorage.setItem(PUSH_SUB_ENDPOINT_KEY, subscription.endpoint); } catch (_) {}
 
-    try {
-      const username = window.__sbPushUsername || (window.ME && window.ME.username) || 'unknown';
-      await fetch(PUSH_SUBSCRIBE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription, username }),
-      });
-    } catch (e) {
-      console.warn('[push] Could not register subscription with server:', e);
-    }
+    await registerWithServer(subscription);
 
-    // Show success toast
     if (window.toast) {
       window.toast({ title: 'Push enabled', msg: 'You will receive notifications', type: 'success', dur: 3000 });
     }
@@ -110,6 +106,20 @@ window.subscribePush = async function () {
     return { granted: false, subscribed: false, error: e.message };
   }
 };
+
+async function registerWithServer(subscription) {
+  const username = getPushUsername();
+  try {
+    await fetch(PUSH_SUBSCRIBE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription, username }),
+    });
+    console.log('[push] Registered with server for:', username);
+  } catch (e) {
+    console.warn('[push] Could not register subscription with server:', e);
+  }
+}
 
 window.unsubscribePush = async function () {
   try {
@@ -166,7 +176,8 @@ window.sendPushToAll = async function (payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ payload }),
     });
-    return res.ok;
+    const data = await res.json();
+    return data.ok;
   } catch (e) {
     console.warn('[push] broadcast failed:', e);
     return false;
@@ -181,7 +192,8 @@ window.pushToUser = async function (username, payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetUsername: username, payload }),
     });
-    return res.ok;
+    const data = await res.json();
+    return data.ok;
   } catch (e) {
     console.warn('[push] targeted send failed:', e);
     return false;
@@ -240,6 +252,20 @@ window.testPush = async function () {
   }
 };
 
+window.checkPushSubscriptions = async function () {
+  try {
+    const res = await fetch(PUSH_STATUS_URL);
+    const data = await res.json();
+    if (window.toast) {
+      window.toast({ title: 'Push subscriptions', msg: `${data.count} active`, type: 'info', dur: 3000 });
+    }
+    return data;
+  } catch (e) {
+    console.warn('[push] check failed:', e);
+    return { count: 0, error: e.message };
+  }
+};
+
 window.initPush = async function () {
   const wasSubscribed = localStorage.getItem(PUSH_SETTING_KEY) === 'true';
   if (!wasSubscribed || !window.isPushSupported()) return;
@@ -250,6 +276,8 @@ window.initPush = async function () {
     if (existing) {
       pushRegistration = existing;
       vapidPublicKey = await fetchVapidPublicKey();
+      // Re-register with server in case of new instance
+      await registerWithServer(existing);
     } else {
       try { localStorage.setItem(PUSH_SETTING_KEY, 'false'); } catch (_) {}
     }
