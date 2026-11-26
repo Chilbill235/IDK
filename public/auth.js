@@ -91,6 +91,7 @@ window.Auth = (function () {
   }
 
   async function syncWarningsFromServer(username) {
+    if (!username) return Promise.resolve();
     const r = await apiRequest('GET', '/auth/warnings/' + (username || (window.ME ? window.ME.username : '')));
     if (!r.error && r.warnings) {
       const all = {};
