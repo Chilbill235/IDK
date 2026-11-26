@@ -10,10 +10,14 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
-const APP_ROOT = path.resolve(__dirname); // folder that contains index.html, auth.html, *.js, *.css
+// On Vercel, the serverless function runs from /var/task/api (where api/index.js lives)
+// but project files (index.html, styles.css, etc.) are at /var/task (project root).
+// __dirname in server.js will be the function directory on Vercel.
+const IS_VERCEL = !!process.env.VERCEL;
+const APP_ROOT = IS_VERCEL ? path.resolve(__dirname, '..') : path.resolve(__dirname);
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || 'localhost';
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env.NODE_ENV || 'production';
 const IS_DEV = NODE_ENV !== 'production';
 
 const app = express();
@@ -69,7 +73,7 @@ try {
 // On Vercel the bundle dir is read-only, so use the writable temp dir there.
 const pushSubscriptions = new Map(); // endpoint -> { endpoint, keys, username }
 const PUSH_SUBS_FILE = process.env.PUSH_SUBS_FILE
-  || (process.env.VERCEL ? path.join(require('os').tmpdir(), 'safebeef-push-subs.json') : path.join(__dirname, 'push-subs.json'));
+  || (IS_VERCEL ? path.join(require('os').tmpdir(), 'safebeef-push-subs.json') : path.join(APP_ROOT, 'push-subs.json'));
 function saveSubs() {
   const arr = Array.from(pushSubscriptions.values());
   try {
