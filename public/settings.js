@@ -60,7 +60,7 @@ window.showDesktopNotification = showDesktopNotification;
 
 /* ---------- Push notifications ---------- */
 window.isPushSupported = function () {
-  return !!(window.serviceWorker && 'PushManager' in window);
+  return !!('serviceWorker' in navigator && 'PushManager' in window);
 };
 
 /* ---------- Quiet hours + auto-emoji helpers ---------- */

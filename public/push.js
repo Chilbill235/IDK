@@ -39,7 +39,7 @@ async function fetchVapidPublicKey() {
 }
 
 window.isPushSupported = function () {
-  return !!(window.serviceWorker && 'PushManager' in window);
+  return !!('serviceWorker' in navigator && 'PushManager' in window);
 };
 
 function getPushUsername() {
