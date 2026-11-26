@@ -10,11 +10,11 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
-// On Vercel, the serverless function runs from /var/task/api (where api/index.js lives)
-// but project files (index.html, styles.css, etc.) are at /var/task (project root).
-// __dirname in server.js will be the function directory on Vercel.
+// On Vercel, server.js is at /var/task/server.js (project root, same as index.html)
+// api/index.js requires '../server.js' from /var/task/api, so __dirname in server.js is /var/task
+// Project files (index.html, styles.css, etc.) are also at /var/task
 const IS_VERCEL = !!process.env.VERCEL;
-const APP_ROOT = IS_VERCEL ? path.resolve(__dirname, '..') : path.resolve(__dirname);
+const APP_ROOT = path.resolve(__dirname); // Always use __dirname - server.js is at project root
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || 'localhost';
 const NODE_ENV = process.env.NODE_ENV || 'production';
