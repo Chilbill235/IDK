@@ -10,12 +10,9 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
-// On Vercel: server.js runs from /var/task/api (required by api/index.js)
-// Static files bundled via includeFiles are at /var/task/public
-// Locally: server.js at project root, static files at ./public
-const IS_VERCEL = !!process.env.VERCEL;
-const PROJECT_ROOT = IS_VERCEL ? path.resolve(__dirname, '..') : path.resolve(__dirname);
-const PUBLIC_ROOT = path.join(PROJECT_ROOT, 'public');
+// server.js is at project root locally (/var/task on Vercel)
+// public/ is at ./public locally (/var/task/public on Vercel via includeFiles)
+const PUBLIC_ROOT = path.join(__dirname, 'public');
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || 'localhost';
 const NODE_ENV = process.env.NODE_ENV || 'production';
@@ -73,8 +70,9 @@ try {
 // Push subscription store. Persisted to disk so restarts don't lose them.
 // On Vercel the bundle dir is read-only, so use the writable temp dir there.
 const pushSubscriptions = new Map(); // endpoint -> { endpoint, keys, username }
+const IS_VERCEL = !!process.env.VERCEL;
 const PUSH_SUBS_FILE = process.env.PUSH_SUBS_FILE
-  || (IS_VERCEL ? path.join(require('os').tmpdir(), 'safebeef-push-subs.json') : path.join(APP_ROOT, 'push-subs.json'));
+  || (IS_VERCEL ? path.join(require('os').tmpdir(), 'safebeef-push-subs.json') : path.join(__dirname, 'push-subs.json'));
 function saveSubs() {
   const arr = Array.from(pushSubscriptions.values());
   try {
