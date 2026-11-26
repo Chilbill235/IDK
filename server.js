@@ -10,11 +10,12 @@ const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
 
-// On Vercel, server.js is at /var/task/server.js (project root, same as index.html)
+// On Vercel, server.js is at /var/task/server.js (project root)
 // api/index.js requires '../server.js' from /var/task/api, so __dirname in server.js is /var/task
-// Project files (index.html, styles.css, etc.) are also at /var/task
+// Static files (index.html, styles.css, etc.) are at /var/task/public
 const IS_VERCEL = !!process.env.VERCEL;
-const APP_ROOT = path.resolve(__dirname); // Always use __dirname - server.js is at project root
+const APP_ROOT = path.resolve(__dirname); // server.js is at project root
+const PUBLIC_ROOT = path.join(APP_ROOT, 'public'); // static files in public/
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || 'localhost';
 const NODE_ENV = process.env.NODE_ENV || 'production';
@@ -272,7 +273,7 @@ const staticOptions = {
   cacheControl: IS_DEV ? false : true,
   maxAge: IS_DEV ? 0 : '7d',
 };
-app.use(express.static(APP_ROOT, staticOptions));
+app.use(express.static(PUBLIC_ROOT, staticOptions));
 
 // Set explicit, sensible Content-Type for key file types (Express handles most,
 // but this guarantees correct MIME even if the system mime database is stale).
@@ -306,8 +307,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/__sb__')) return next();
   if (path.extname(req.path)) return next();
 
-  const candidate = path.join(APP_ROOT, req.path);
-  const fs = require('fs');
+  const candidate = path.join(PUBLIC_ROOT, req.path);
   try {
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return res.sendFile(candidate);
@@ -315,7 +315,7 @@ app.use((req, res, next) => {
   } catch (e) {
     // fall through to index.html
   }
-  res.sendFile(path.join(APP_ROOT, 'index.html'));
+  res.sendFile(path.join(PUBLIC_ROOT, 'index.html'));
 });
 
 // ---------------------------------------------------------------------------
@@ -340,7 +340,7 @@ if (require.main === module) {
     console.log(' SafeBeef — localhost server');
     console.log('=============================================================================');
     console.log(`  Environment : ${NODE_ENV}`);
-    console.log(`  Serving     : ${APP_ROOT}`);
+    console.log(`  Serving     : ${PUBLIC_ROOT}`);
     console.log(`  Local       : ${urls[0]}`);
     console.log(`  Network     : ${urls[1]}`);
     console.log(`  Health      : ${urls[0]}/__sb__/health`);
