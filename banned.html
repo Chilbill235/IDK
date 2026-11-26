@@ -298,6 +298,107 @@ canvas#bannedParticles{position:absolute;inset:0;width:100%;height:100%}
   .appeal-modal-foot{flex-direction:column-reverse}
   .appeal-modal-foot button{width:100%}
 }
+
+/* ============================================================
+   ENHANCED MOBILE STYLES
+   ============================================================ */
+@media (max-width: 640px) {
+  /* Better touch targets */
+  .ba-btn,
+  .appeal-action-btn,
+  .appeal-modal-foot button,
+  .info-cell,
+  .cd-seg,
+  .banned-footer a,
+  .bp-toast-close,
+  .appeal-modal-close,
+  .appeal-textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better input sizing */
+  .appeal-textarea { font-size: 16px !important; }
+
+  /* Improved spacing */
+  .banned-shell { padding: 20px; gap: 14px; }
+  .banned-hero { gap: 10px; }
+  .banned-icon-wrap { width: 52px; height: 52px; font-size: 24px; }
+  .banned-title { font-size: 24px; }
+  .hero-badge, .hero-ban-id { padding: 4px 10px; font-size: 10px; }
+  .cd-segments { gap: 8px; }
+  .cd-seg { padding: 10px 4px; }
+  .cd-num { font-size: 24px; }
+  .cd-lab { font-size: 9.5px; }
+  .banned-actions { gap: 10px; }
+  .ba-btn { padding: 14px 18px; font-size: 14px; }
+  .info-section-head { padding: 14px; }
+  .info-avatar { width: 42px; height: 42px; font-size: 14px; }
+  .info-name { font-size: 14px; }
+  .info-user { font-size: 11px; }
+  .info-grid { padding: 14px; gap: 8px; }
+  .info-cell { padding: 12px; }
+  .info-label { font-size: 9.5px; }
+  .info-value { font-size: 13px; }
+  .appeal-section { padding: 14px; }
+  .appeal-section-title { font-size: 13.5px; }
+  .appeal-section-desc { font-size: 11.5px; }
+  .appeal-action-btn { padding: 14px 18px; font-size: 13.5px; }
+  .appeal-banner { padding: 14px; }
+  .appeal-banner-ico { width: 36px; height: 36px; font-size: 18px; }
+  .appeal-banner-title { font-size: 13.5px; }
+  .appeal-banner-body { font-size: 12px; }
+  .appeal-banner-reason div { font-size: 12px; }
+  .appeal-banner-meta { font-size: 10px; }
+  .banned-footer { font-size: 11px; }
+  .unbanned-icon { width: 56px; height: 56px; font-size: 30px; }
+  .unbanned-title { font-size: 24px; }
+  .unbanned-sub { font-size: 12.5px; }
+  .unbanned-card { padding: 14px; gap: 10px; }
+  .unbanned-row { padding: 10px 12px; }
+  .unbanned-label { font-size: 9.5px; }
+  .unbanned-value { font-size: 12.5px; }
+  .bp-toast { padding: 14px 14px; gap: 12px; }
+  .bp-toast-ico { width: 32px; height: 32px; font-size: 16px; }
+  .bp-toast-title { font-size: 13.5px; }
+  .bp-toast-msg { font-size: 12px; }
+  .appeal-modal { max-width: calc(100% - 24px); border-radius: 20px; }
+  .appeal-modal-head { padding: 16px 18px; }
+  .appeal-modal-ico { width: 40px; height: 40px; font-size: 20px; }
+  .appeal-modal-titles h3 { font-size: 15px; }
+  .appeal-modal-sub { font-size: 11px; }
+  .appeal-modal-body { padding: 16px 18px; gap: 14px; }
+  .appeal-modal-body p { font-size: 13px; }
+  .appeal-textarea { padding: 14px 16px; min-height: 120px; }
+  .appeal-modal-foot { padding: 12px 18px; }
+  .appeal-modal-foot button { padding: 14px 18px; font-size: 14px; border-radius: 12px; }
+}
+
+@media (max-width: 400px) {
+  .banned-shell { padding: 16px; }
+  .banned-icon-wrap { width: 44px; height: 44px; font-size: 20px; }
+  .banned-title { font-size: 20px; }
+  .cd-seg { padding: 8px 2px; }
+  .cd-num { font-size: 20px; }
+  .ba-btn { padding: 12px 16px; font-size: 13px; }
+  .info-cell { padding: 10px; }
+  .appeal-action-btn { padding: 12px 16px; font-size: 12.5px; }
+  .appeal-textarea { min-height: 100px; }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .banned-shell { max-width: 600px; padding: 28px; }
+  .banned-icon-wrap { width: 68px; height: 68px; font-size: 30px; }
+  .banned-title { font-size: 28px; }
+  .cd-segments { gap: 10px; }
+  .cd-seg { padding: 14px 6px; }
+  .cd-num { font-size: 28px; }
+  .info-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .info-cell { padding: 16px; }
+  .appeal-banner { padding: 18px; }
+  .appeal-modal { max-width: 520px; }
+}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }

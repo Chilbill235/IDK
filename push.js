@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SafeBeef v83 — Push Notification Client
+   SafeBeef v83 — Push Notification Client (Enhanced)
    Handles Push API subscription, VAPID key retrieval, and sync with server.
    ========================================================================== */
 'use strict';
@@ -7,6 +7,7 @@
 const PUSH_PUBLIC_KEY_URL = '/__sb__/push/vapid-public-key';
 const PUSH_SUBSCRIBE_URL = '/__sb__/push/subscribe';
 const PUSH_UNSUBSCRIBE_URL = '/__sb__/push/unsubscribe';
+const PUSH_TEST_URL = '/__sb__/push/test';
 
 const PUSH_SETTING_KEY = 'sb26_push_subscribed';
 const PUSH_SUB_ENDPOINT_KEY = 'sb26_push_endpoint';
@@ -70,6 +71,11 @@ window.subscribePush = async function () {
   }
 
   try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      return { granted: false, subscribed: false, error: 'Notification permission denied' };
+    }
+
     const subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(key),
@@ -90,9 +96,17 @@ window.subscribePush = async function () {
       console.warn('[push] Could not register subscription with server:', e);
     }
 
+    // Show success toast
+    if (window.toast) {
+      window.toast({ title: 'Push enabled', msg: 'You will receive notifications', type: 'success', dur: 3000 });
+    }
+
     return { granted: true, subscribed: true };
   } catch (e) {
     console.warn('[push] subscribe failed:', e);
+    if (window.toast) {
+      window.toast({ title: 'Push failed', msg: e.message, type: 'error', dur: 4000 });
+    }
     return { granted: false, subscribed: false, error: e.message };
   }
 };
@@ -128,6 +142,11 @@ window.unsubscribePush = async function () {
     }
 
     try { localStorage.setItem(PUSH_SETTING_KEY, 'false'); } catch (_) {}
+
+    if (window.toast) {
+      window.toast({ title: 'Push disabled', msg: 'You will no longer receive notifications', type: 'info', dur: 3000 });
+    }
+
     return { ok: true };
   } catch (e) {
     console.warn('[push] unsubscribe failed:', e);
@@ -154,8 +173,6 @@ window.sendPushToAll = async function (payload) {
   }
 };
 
-// Send a push to every endpoint registered for a specific user (works even when
-// that user's tab is closed, as long as they have a push subscription).
 window.pushToUser = async function (username, payload) {
   if (!username || !payload) return false;
   try {
@@ -171,8 +188,6 @@ window.pushToUser = async function (username, payload) {
   }
 };
 
-// Unified notifier: fires a service-worker (or fallback) local notification AND
-// mirrors it to the server so the user's other subscribed devices get it too.
 window.pushNotify = async function (title, body, opts) {
   opts = opts || {};
   const payload = {
@@ -208,6 +223,23 @@ window.pushNotify = async function (title, body, opts) {
   return true;
 };
 
+window.testPush = async function () {
+  try {
+    const res = await fetch(PUSH_TEST_URL, { method: 'POST' });
+    const data = await res.json();
+    if (window.toast) {
+      window.toast({ title: 'Test push sent', msg: `Sent to ${data.sent} of ${data.total} subscriptions`, type: data.sent > 0 ? 'success' : 'warn', dur: 4000 });
+    }
+    return data;
+  } catch (e) {
+    console.warn('[push] test failed:', e);
+    if (window.toast) {
+      window.toast({ title: 'Test failed', msg: e.message, type: 'error', dur: 4000 });
+    }
+    return { ok: false, error: e.message };
+  }
+};
+
 window.initPush = async function () {
   const wasSubscribed = localStorage.getItem(PUSH_SETTING_KEY) === 'true';
   if (!wasSubscribed || !window.isPushSupported()) return;
@@ -223,5 +255,43 @@ window.initPush = async function () {
     }
   } catch (e) {
     console.warn('[push] init check failed:', e);
+  }
+};
+
+// Handle incoming push messages (when app is open)
+window.handlePushMessage = async function (data) {
+  const payload = {
+    title: data.title || 'SafeBeef',
+    body: data.body || '',
+    type: data.type || 'info',
+    tag: data.tag || 'safebeef',
+    url: data.url || './index.html',
+    requireInteraction: data.requireInteraction === true,
+    silent: data.silent !== false,
+    data: data.data || {},
+  };
+
+  // Show local notification
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && reg.active) await reg.showNotification(payload.title, payload);
+        else new Notification(payload.title, payload);
+      } else {
+        new Notification(payload.title, payload);
+      }
+    }
+  } catch (e) { console.warn('[push] show notification failed:', e); }
+
+  // Also show in-app toast
+  if (window.toast && document.visibilityState === 'visible') {
+    window.toast({
+      title: payload.title,
+      msg: payload.body,
+      type: payload.type,
+      dur: payload.requireInteraction ? 0 : 5000,
+      onClick: () => { window.focus(); },
+    });
   }
 };

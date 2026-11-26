@@ -1,9 +1,11 @@
 /* ==========================================================================
-   toast.js — SafeBeef v83
+   toast.js — SafeBeef v83 Enhanced
    - Responsive positioning: below topbar on desktop/tablet, full-width on mobile
-   - Modern polished toast UI with progress, badges, actions
+   - Modern polished toast UI with progress, badges, actions, swipe-to-dismiss
    - Cross-tab dedup via localStorage
-   - NEW: window.showAnnouncement() — full-screen modal for mod broadcasts
+   - Sound support with user preference
+   - Full-screen announcement modal for mod broadcasts
+   - Queue management with priority
    ========================================================================== */
 (function () {
   'use strict';
@@ -24,7 +26,7 @@
         right: 16px !important;
         left: auto !important;
         bottom: auto !important;
-        max-width: 400px !important;
+        max-width: 420px !important;
         width: auto !important;
       }
       .toast-container .toast { pointer-events: auto !important; }
@@ -40,7 +42,7 @@
         .toast-container {
           top: 70px !important;
           right: 12px !important;
-          max-width: 340px !important;
+          max-width: 360px !important;
         }
       }
       @media (max-width: 768px) {
@@ -385,9 +387,10 @@
   const isMobile = () => window.innerWidth <= 640;
   const maxVisible = () => isMobile() ? MAX_VISIBLE_MOBILE : MAX_VISIBLE_DESKTOP;
 
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => (
-    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
-  ));
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => {
+    const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": "'" };
+    return map[c];
+  });
 
   function hashStr(s) {
     let h = 5381;
@@ -461,6 +464,54 @@
     return null;
   }
 
+  function playToastSound(type) {
+    try {
+      if (window.settings?.sound === false) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const vol = window.settings?.volume ?? 0.5;
+      if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.setValueAtTime(330, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(220, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.08 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      } else if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.06 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      } else if (type === 'warn') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.07 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      } else if (type === 'message') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.05 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.05 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      }
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  }
+
   function mountToast(pending) {
     const c = getContainer();
     const el = document.createElement('div');
@@ -528,6 +579,7 @@
       });
     }
 
+    // Swipe to dismiss
     let startX = 0, startY = 0, curX = 0, dragging = false;
     el.addEventListener('pointerdown', e => {
       if (e.target.closest('.toast-close') || e.target.closest('.toast-action-btn')) return;
@@ -593,6 +645,9 @@
         handle.autoTimer = setTimeout(handle.close, pending.dur);
       }
     };
+
+    // Play sound
+    playToastSound(pending.type);
 
     dedupRegistry.set(buildDedupKey(pending), handle);
     activeToasts.push(handle);
@@ -786,6 +841,7 @@
       }, dur);
     }
 
+    // Play announcement sound
     try {
       if (window.settings?.sound !== false) {
         const AC = window.AudioContext || window.webkitAudioContext;

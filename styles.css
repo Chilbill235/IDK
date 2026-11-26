@@ -947,6 +947,170 @@ body.compact-mode .imsg-msg-bubble { padding:7px 12px; font-size:13.5px; }
   .mod-tabs { scroll-snap-type: x proximity; scroll-padding: 0 10px; }
   .mod-tab { scroll-snap-align: start; }
 }
+
+/* ============================================================ ENHANCED MOBILE STYLES */
+@media(max-width:768px) {
+  /* Better touch targets */
+  button, .btn, .dropdown-item, .mod-drill-action, .mod-tool, .mod-action-btn,
+  .auth-submit, .auth-tab, .auth-pass-toggle, .auth-input,
+  .imsg-send, .imsg-plus, .imsg-input-row input, .imsg-input-row textarea,
+  .module, .hook-user-row, .mod-user-btn, .mod-user-card,
+  .settings-row, .settings-toggle, .theme-switch button,
+  .cmd-result, .cfg-input, .cfg-select, .cfg-toggle,
+  .page-cta-btn, .ba-btn, .appeal-action-btn, .appeal-modal-foot button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better input sizing */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  /* Improved spacing on mobile */
+  .topbar { padding-left: 12px; padding-right: 12px; }
+  .pane-head { padding: 12px 14px; }
+  .modules-search { padding: 12px 14px; }
+  .modules-search input { padding: 14px 46px 14px 44px; font-size: 16px; }
+  .modules-wrap { padding: 16px; }
+  .module { min-height: 120px; padding: 16px; }
+  .hook-panel { padding: 12px; }
+  .hook-user-row { padding: 12px 14px; }
+  .hook-online-list { padding: 8px 10px; }
+  .console-out { padding: 16px; font-size: 12px; }
+  .console-in input { padding: 14px 0; font-size: 14px; }
+  .stat-grid { gap: 1px; }
+  .stat-cell { padding: 14px 8px; }
+  .stat-cell .k { font-size: 8.5px; }
+  .stat-cell .v { font-size: 16px; }
+
+  /* Mobile nav improvements */
+  .mobile-nav { height: calc(60px + var(--safe-bottom)); }
+  .mnav-btn { padding: 6px 0; gap: 3px; }
+  .mnav-btn .ico { font-size: 20px; }
+  .mnav-btn { font-size: 8.5px; }
+  .mnav-btn.on::before { width: 32px; height: 3px; }
+
+  /* Sheet improvements */
+  .sheet { border-radius: 20px 20px 0 0; }
+  .sheet-head { padding: 16px 20px; }
+  .sheet-body { padding: 16px 20px; gap: 8px; }
+
+  /* iMessage mobile */
+  .imsg-messages { padding: 16px; gap: 4px; }
+  .imsg-msg { max-width: 90%; }
+  .imsg-msg-bubble { padding: 10px 16px; font-size: 15px; border-radius: 22px; }
+  .imsg-msg.me .imsg-msg-bubble { border-bottom-right-radius: 6px; }
+  .imsg-msg.them .imsg-msg-bubble { border-bottom-left-radius: 6px; }
+  .imsg-input-row { padding: 12px 16px 16px; gap: 10px; }
+  .imsg-plus { width: 40px; height: 40px; font-size: 22px; }
+  .imsg-send { width: 40px; height: 40px; font-size: 18px; }
+  .imsg-input-row input, .imsg-input-row textarea { padding: 12px 18px; font-size: 16px; border-radius: 22px; }
+  .imsg-conv { padding: 14px 14px; }
+  .imsg-conv-avatar { width: 52px; height: 52px; font-size: 18px; }
+  .imsg-conv-name { font-size: 14px; }
+  .imsg-conv-preview { font-size: 13px; }
+
+  /* Auth page mobile */
+  .auth-card { padding: 24px 20px; gap: 20px; }
+  .auth-input { padding: 16px 14px 16px 52px; font-size: 16px; border-radius: 14px; }
+  .auth-input-ico { font-size: 18px; left: 16px; }
+  .auth-pass-toggle { right: 12px; font-size: 18px; padding: 8px; }
+  .auth-submit { padding: 16px; font-size: 16px; border-radius: 14px; }
+  .auth-tab { padding: 16px 12px; font-size: 15px; }
+  .auth-hero-icon { width: 56px; height: 56px; font-size: 24px; }
+  .auth-hero-title { font-size: 24px; }
+
+  /* Banned page mobile */
+  .banned-shell { padding: 20px; gap: 14px; }
+  .banned-hero { gap: 10px; }
+  .banned-icon-wrap { width: 52px; height: 52px; font-size: 24px; }
+  .banned-title { font-size: 24px; }
+  .cd-segments { gap: 8px; }
+  .cd-seg { padding: 10px 4px; }
+  .cd-num { font-size: 24px; }
+  .banned-actions { gap: 10px; }
+  .ba-btn { padding: 14px 18px; font-size: 14px; }
+
+  /* Standalone pages mobile */
+  .legal-main, .about-main, .help-main { padding: 24px 16px 48px; }
+  .legal-hero, .about-hero, .help-hero { padding: 36px 16px 24px; }
+  .legal-hero-icon, .about-hero-icon, .help-hero-icon { width: 60px; height: 60px; font-size: 30px; }
+  .legal-body h2 { font-size: 17px; }
+  .legal-body p { font-size: 14px; line-height: 1.7; }
+  .feature-card { padding: 16px; }
+  .faq summary { font-size: 14px; }
+  .faq details p { font-size: 13.5px; }
+  .toc-list { grid-template-columns: 1fr; }
+  .page-cta { padding: 20px; }
+  .page-cta-btn { padding: 14px 24px; font-size: 14px; }
+
+  /* Mod panel mobile */
+  .mod-search-input { padding: 14px 14px 14px 44px; font-size: 16px; }
+  .mod-search-ico { font-size: 15px; left: 16px; }
+  .mod-user-card { padding: 14px; gap: 14px; }
+  .mod-user-avatar { width: 48px; height: 48px; font-size: 16px; }
+  .mod-user-name { font-size: 14px; }
+  .mod-user-btn { width: 36px; height: 36px; font-size: 18px; }
+  .mod-drill-action { padding: 14px; min-height: 56px; }
+  .mod-action-ico { width: 38px; height: 38px; font-size: 18px; }
+  .mod-action-title { font-size: 13.5px; }
+  .mod-action-desc { font-size: 11.5px; }
+
+  /* Settings mobile */
+  .settings-row { padding: 14px; }
+  .settings-row-ico { width: 40px; height: 40px; font-size: 18px; }
+  .settings-row-title { font-size: 14px; }
+  .settings-row-desc { font-size: 12px; }
+  .settings-toggle { width: 48px; height: 28px; }
+  .settings-toggle::after { width: 22px; height: 22px; top: 2px; left: 2px; }
+  .settings-toggle.on::after { transform: translateX(20px); }
+  .theme-switch button { width: 36px; height: 34px; font-size: 17px; }
+
+  /* Profile mobile */
+  .profile-avatar { width: 72px; height: 72px; font-size: 26px; }
+  .profile-name { font-size: 17px; }
+  .profile-stat-value { font-size: 17px; }
+  .profile-stat-label { font-size: 9.5px; }
+
+  /* Toast mobile improvements */
+  .toast { padding: 16px 48px 16px 16px; min-height: 64px; border-radius: 18px; }
+  .toast-icon { width: 38px; height: 38px; font-size: 18px; border-radius: 12px; }
+  .toast-title { font-size: 14px; }
+  .toast-msg { font-size: 12.5px; }
+  .toast-action-btn { padding: 8px 16px; font-size: 12px; border-radius: 10px; }
+  .toast-close { width: 30px; height: 30px; font-size: 18px; border-radius: 10px; }
+
+  /* Announcement modal mobile */
+  .sb-announce-overlay { padding: 16px; }
+  .sb-announce-card { border-radius: 20px; }
+  .sb-announce-head { padding: 22px 22px 16px; }
+  .sb-announce-ico { width: 52px; height: 52px; font-size: 24px; border-radius: 15px; }
+  .sb-announce-title { font-size: 20px; }
+  .sb-announce-body { padding: 20px 22px; font-size: 14.5px; }
+  .sb-announce-foot { padding: 16px 22px 20px; }
+  .sb-announce-dismiss { flex: 1; padding: 14px 24px; font-size: 14px; border-radius: 13px; }
+
+  /* Command palette mobile */
+  .cmd-palette { border-radius: 14px; }
+  .cmd-input-row input { font-size: 16px; padding: 4px 0; }
+  .cmd-result { padding: 14px 16px; font-size: 13.5px; }
+  .cmd-ico { font-size: 18px; width: 28px; }
+
+  /* Config dialog mobile */
+  .cfg-dialog { border-radius: 16px; }
+  .cfg-head { padding: 18px 20px; }
+  .cfg-ico { width: 44px; height: 44px; font-size: 22px; border-radius: 13px; }
+  .cfg-body { padding: 18px 20px; gap: 16px; }
+  .cfg-input { padding: 14px 16px; font-size: 16px; border-radius: 12px; }
+  .cfg-select { padding: 14px 44px 14px 16px; font-size: 16px; border-radius: 12px; }
+  .cfg-toggle-track { width: 48px; height: 28px; }
+  .cfg-toggle-track::after { width: 22px; height: 22px; }
+  .cfg-toggle input:checked + .cfg-toggle-track::after { transform: translateX(20px); }
+  .cfg-foot { padding: 14px 20px; }
+  .cfg-foot .btn { padding: 14px 24px; font-size: 13.5px; border-radius: 12px; }
+}
+
 @media(max-width:400px) {
   .modules { grid-template-columns:1fr; }
   .mod-drill-status { grid-template-columns:1fr 1fr; }
@@ -955,12 +1119,84 @@ body.compact-mode .imsg-msg-bubble { padding:7px 12px; font-size:13.5px; }
   .topstats { gap: 4px; }
   .stat-chip { padding: 3px 6px; font-size: 8.5px; }
   .topbar .sb-clock { padding: 3px 6px; font-size: 8.5px; }
+  .hook-user-row { gap: 8px; padding: 10px 12px; }
+  .hook-user-avatar { width: 26px; height: 26px; font-size: 10px; }
+  .module { min-height: 100px; padding: 12px; }
+  .module .m-ico { font-size: 20px; }
+  .module .m-name { font-size: 12px; }
+  .module .m-desc { font-size: 9.5px; }
 }
+
 @media(max-width:380px) {
   .mod-tab > span:not(.mod-tab-ico):not(.mod-tab-count) { font-size: 8px !important; }
   .mod-tab { min-width: 56px !important; padding: 6px 6px !important; }
+  .mobile-nav { grid-template-columns: repeat(5, 1fr); }
+  .mnav-btn { font-size: 7.5px; padding: 4px 0; gap: 2px; }
+  .mnav-btn .ico { font-size: 17px; }
+  .imsg-msg-bubble { font-size: 14px; padding: 9px 14px; }
+  .auth-input { padding: 14px 14px 14px 50px; font-size: 15px; }
+  .auth-submit { padding: 14px; font-size: 15px; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+
+/* ============================================================ LARGE MOBILE / SMALL TABLET */
+@media(min-width:641px) and (max-width:900px) {
+  .workspace { display: grid; }
+  .mobile-views { display: none; }
+  .mobile-nav { display: none; }
+  :root { --pane-left-w: 190px; --pane-right-w: 290px; }
+  .modules { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .module { min-height: 110px; }
+  .imsg-overlay { padding: 12px; }
+  .imsg-app { max-width: calc(100% - 24px); max-height: calc(100% - 24px); border-radius: 18px; }
+  .imsg-sidebar { width: 300px; }
+  .imsg-thread-panel { position: static; transform: none; }
+  .imsg-back { display: none; }
+  .mod-panel, .mod-drill, .mod-dialog-overlay, .cfg-overlay, .settings-panel, .stats-panel, .profile-panel { padding: 16px; }
+  .mod-card, .mod-drill-card, .mod-dialog, .cfg-dialog, .settings-shell { max-width: calc(100% - 32px); max-height: calc(100vh - 32px); height: auto; border-radius: 20px; margin: auto; }
+}
+
+@media(min-width:901px) and (max-width:1200px) {
+  :root { --pane-left-w: 210px; --pane-right-w: 340px; }
+}
+
+/* ============================================================ DESKTOP ENHANCEMENTS */
+@media(min-width:769px) {
+  /* Hover states for desktop */
+  .module:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+  .hook-user-row:hover { background: var(--surface-2); transform: translateX(2px); }
+  .mod-user-card:hover { background: var(--surface-3); transform: translateX(4px); }
+  .mod-drill-action:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .mod-tool:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .mod-list-card:hover { background: var(--surface-3); }
+  .feature-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+  .cmd-result:hover { background: var(--accent-bg); }
+  .auth-tab:hover:not([aria-selected="true"]) { background: rgba(255,255,255,.04); }
+  .auth-submit:hover:not(:disabled) { transform: translateY(-2px); }
+  .page-cta-btn:hover { transform: translateY(-3px); }
+  .ba-btn:hover { transform: translateY(-3px); }
+  .appeal-action-btn:hover:not(:disabled) { transform: translateY(-3px); }
+
+  /* Focus visible for keyboard navigation */
+  .module:focus-visible, .hook-user-row:focus-visible, .mod-drill-action:focus-visible,
+  .mod-tool:focus-visible, .mod-user-card:focus-visible, .auth-tab:focus-visible,
+  .auth-submit:focus-visible, .auth-input:focus-visible, .auth-pass-toggle:focus-visible,
+  .btn:focus-visible, .icon-btn:focus-visible, .dropdown-item:focus-visible,
+  .page-cta-btn:focus-visible, .ba-btn:focus-visible, .appeal-action-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ============================================================ REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
 /* ============================================================ MAINTENANCE */
